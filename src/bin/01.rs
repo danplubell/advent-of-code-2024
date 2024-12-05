@@ -6,7 +6,16 @@ pub fn part_one(input: &str) -> Option<u32> {
         .iter()
         .map(|s| s.split("   ").collect::<Vec<_>>())
         .collect();
-    println!("{:?}", number_pairs);
+    let mut left: Vec<u32>  = vec![];
+    let mut right: Vec<u32> = vec![];
+    for number_pair in number_pairs.iter().filter(|p| p.len() == 2) {
+        let left_nbr = number_pair[0].parse::<u32>().unwrap();
+        let right_nbr = number_pair[1].parse::<u32>().unwrap();
+        left.push(left_nbr);
+        right.push(right_nbr);
+    }
+    left.sort_by(|a, b| b.cmp(a));
+    right.sort_by(|a, b| b.cmp(a));
     None
 }
 pub fn part_two(input: &str) -> Option<u32> {
