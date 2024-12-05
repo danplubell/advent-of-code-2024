@@ -25,6 +25,55 @@ pub fn part_one(input: &str) -> Option<u32> {
     
     Some(t)
 }
+pub fn test_it1(input: &str) -> Option<u32> {
+    let mut count_map = std::collections::HashMap::new();
+    let mut total = 0;
+
+    for line in input.lines() {
+        let mut nums = line.split_whitespace();
+        if let (Some(left_str), Some(right_str)) = (nums.next(), nums.next()) {
+            if let (Ok(left), Ok(right)) = (left_str.parse::<u32>(), right_str.parse::<u32>()) {
+                *count_map.entry(right).or_insert(0) += 1;
+                total += left;
+            }
+        }
+    }
+
+    let result: u32 = count_map
+        .iter()
+        .map(|(right, count)| right * total)
+        .sum();
+
+    Some(result)
+}
+pub fn test_it(input: &str) -> Option<u32> {
+    let pairs: Vec<&str> = input.split("\n").collect();
+    let number_pairs: Vec<_> = pairs
+        .iter()
+        .map(|s| s.split("   ").collect::<Vec<_>>())
+        .collect();
+    let mut left: Vec<u32>  = vec![];
+    let mut right: Vec<u32> = vec![];
+    for number_pair in number_pairs.iter().filter(|p| p.len() == 2) {
+        let left_nbr = number_pair[0].parse::<u32>().unwrap();
+        let right_nbr = number_pair[1].parse::<u32>().unwrap();
+        left.push(left_nbr);
+        right.push(right_nbr);
+    }
+    let mut t = 0;
+    for l in left.iter() {
+        let mut c = 0;
+        for r in right.iter() {
+            if r == l {
+                c += 1;
+            }
+        }
+        t += l * c
+    }
+
+    Some(t)
+
+}
 pub fn part_two(input: &str) -> Option<u32> {
     let pairs: Vec<&str> = input.split("\n").collect();
     let number_pairs: Vec<_> = pairs
@@ -43,7 +92,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     for l in left.iter() {
         let mut c = 0;
         for r in right.iter() {
-            if(r == l) {
+            if r == l {
                 c += 1;
             }
         }
