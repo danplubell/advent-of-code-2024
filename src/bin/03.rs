@@ -28,9 +28,35 @@ pub fn part_one(input: &str) -> Option<u32> {
     let result = numbers.into_iter().reduce(u32::add).unwrap();
     Some(result)
 }
-
+const STOP: &str = "don't";
+const RESUME: &str = "do"; 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let last_idx = input.len()-1;
+    let mut index:usize = 0;
+    let mut buffer: Vec<char> = vec![];
+    let mut toggle = true;
+    while index < last_idx {
+        let c = input.chars().nth(index).unwrap();
+        if c == 'd' {
+            let is_stop = input.get(index..(index+STOP.len()))?;
+            let is_resume = input.get(index..(index+RESUME.len()))?;
+            if is_stop == STOP {
+                toggle = false;
+                index += STOP.len();
+            } else if is_resume == RESUME {
+                toggle= true;
+                buffer.push(c);
+                index += RESUME.len();
+            }
+            continue;
+        }
+        if toggle {
+            buffer.push(input.chars().nth(index).unwrap());
+        }
+        index += 1;
+    }
+    let new_input = buffer.iter().collect::<String>();
+    part_one(&new_input)
 }
 
 #[cfg(test)]
@@ -47,7 +73,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(48));
     }
     #[test]
     fn test_id() {
