@@ -1,5 +1,7 @@
 advent_of_code::solution!(3);
 
+
+// mul\((?![^()]*mul\()[^()]*\)
 pub fn part_one(input: &str) -> Option<u32> {
     None
 }
