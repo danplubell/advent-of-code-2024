@@ -29,11 +29,12 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(result)
 }
 const STOP: &str = "don't";
-const RESUME: &str = "do"; 
+const RESUME: &str = "do";
+
 pub fn part_two(input: &str) -> Option<u32> {
     let last_idx = input.len()-1;
     let mut index:usize = 0;
-    let mut buffer: Vec<char> = vec![];
+    let mut buffer: Vec<char> = Vec::with_capacity(input.len());
     let mut toggle = true;
     while index < last_idx {
         let c = input.chars().nth(index).unwrap();
