@@ -34,10 +34,25 @@ pub fn part_one(input: &str) -> Option<u32> {
         })
     }).collect();
     let r_n = rows.iter().map(|r|find_xmas(r)).reduce(|a, b| a + b).unwrap();
-    println!(" rows: {:?}", rows);
+    //diagonals
+    // convert to vector of char vectors
+    // flatten
+    let stride = input.lines().next().unwrap().len();
+    let char_vecs = input.lines().map(|line| {line.chars().collect::<Vec<char>>()}).collect::<Vec<_>>();
+    let flattened = char_vecs.iter().flatten().collect::<Vec<_>>();
+    
+    // get diagonals
+    /*
+    start with a cell, next cell add index + stride + 1, take that cell and add to list,
+    next cell add index + stride + 1, don't overflow
+     */
+    // do windows of 5??
+    println!("stride:{}", stride);
+    println!("x: {:?}", flattened);
     let n = n + r_n;
     
     //diagonals
+    
     Some(n)
 }
 
