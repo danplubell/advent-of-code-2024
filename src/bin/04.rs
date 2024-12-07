@@ -13,6 +13,22 @@ fn find_xmas(chars: &[char]) -> u32 {
     }
     count
 }
+fn diagonals(flattened: Vec<&char>, stride: usize) -> u32 {
+    //diagonals
+    // convert to vector of char vectors
+    // flatten
+    let mut d_f =0;
+    for (i,f) in flattened.iter().enumerate() {
+        let rest = flattened.get(i..).unwrap();
+        let result: Vec<_> = rest.iter().step_by(stride + 1).cloned().collect();
+        if result.len() < stride {
+            continue;
+        }
+        let result_chars: Vec<char> = result.into_iter().cloned().collect();
+        d_f += find_xmas(&result_chars);
+    }
+    d_f
+}
 pub fn part_one(input: &str) -> Option<u32> {
     // handle lines
 //    let chars = input.chars().collect::<Vec<_>>();
@@ -34,24 +50,17 @@ pub fn part_one(input: &str) -> Option<u32> {
         })
     }).collect();
     let r_n = rows.iter().map(|r|find_xmas(r)).reduce(|a, b| a + b).unwrap();
-    //diagonals
-    // convert to vector of char vectors
-    // flatten
     let stride = input.lines().next().unwrap().len();
     let char_vecs = input.lines().map(|line| {line.chars().collect::<Vec<char>>()}).collect::<Vec<_>>();
-    let flattened = char_vecs.iter().flatten().collect::<Vec<_>>();
+    let mut flattened = char_vecs.iter().flatten().collect::<Vec<_>>();
+    let d_f = diagonals(flattened.clone(),stride);
     
-    // get diagonals
-    /*
-    start with a cell, next cell add index + stride + 1, take that cell and add to list,
-    next cell add index + stride + 1, don't overflow
-     */
-    // do windows of 5??
-    println!("stride:{}", stride);
-    println!("x: {:?}", flattened);
-    let n = n + r_n;
+    flattened.reverse();
+    let d_f_r = diagonals(flattened,stride);
     
-    //diagonals
+    
+    let n = n + r_n + d_f + d_f_r;
+    
     
     Some(n)
 }
@@ -79,5 +88,12 @@ mod tests {
     fn test_find_xmas() {
         let chars = "SAMXefXMAS".chars().collect::<Vec<char>>();
         println!("{}", find_xmas(&chars));
+    }
+    #[test]
+    fn test_id(){
+        let vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let step = 2;
+        let result: Vec<_> = vec.iter().step_by(step).cloned().collect();
+        println!("{:?}", result)
     }
 }
