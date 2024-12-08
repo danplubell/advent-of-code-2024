@@ -1,98 +1,135 @@
 advent_of_code::solution!(4);
-const XMAS: &[char] = &['X', 'M', 'A', 'S'];
-const SAMX: &[char] = &['S', 'A', 'M', 'X'];
 
+fn count_overlapping(text: &str, pattern: &str) -> usize {
+    if pattern.is_empty() || pattern.len() > text.len() {
+        return 0;
+    }
+
+    text.char_indices()
+        .filter(|(i, _)| text[*i..].starts_with(pattern))
+        .count()
+}
 fn find_xmas(chars: &[char]) -> u32 {
-    //    let chars = input.chars().collect::<Vec<char>>();
-    let windows = chars.windows(4);
-    let mut count = 0;
-    for w in windows {
-        if w == XMAS || w == SAMX {
-            count += 1;
-        }
-    }
-    count
+    let s:String = chars.iter().collect();
+    let slice:&str = &s;
+    let xmas_cnt = count_overlapping(slice, "XMAS");
+    let samx_cnt = count_overlapping(slice, "SAMX");
+    (xmas_cnt + samx_cnt) as u32
 }
-fn diagonals1(flattened: Vec<&char>, stride: usize) -> u32 {
-    //diagonals
-    // convert to vector of char vectors
-    // flatten
-    let mut d_f = 0;
-    for (i, f) in flattened.iter().enumerate() {
-        let rest = flattened.get(i..).unwrap();
-        let result: Vec<_> = rest.iter().step_by(stride + 1).cloned().collect();
-        if result.len() < stride {
-            continue;
-        }
-        let result_chars: Vec<char> = result.into_iter().cloned().collect();
-        d_f += find_xmas(&result_chars);
-    }
-    d_f
-}
-fn diagonals(input: &str) -> u32 {
+fn diagonals_rtl(input: &str) -> u32 {
     let lines: Vec<_> = input.lines().collect();
     let mut t = 0;
-    for row_cycle in 0..lines.len() {
-        println!("row_cycle: {row_cycle}");
-        for iteration in 0..lines.len() {
-           let mut col_index = iteration;
-            let mut buffer: Vec<char> = Vec::new();
-            for row in row_cycle..lines.len() {
-                if col_index > 3 {
-                    break;
-                }
-                let r = lines.get(row);
-                match r {
-                    Some(v) => {
-                        let c = v.chars().nth(col_index);
-                        match c {
-                            Some(v) => buffer.push(v),
-                            None => break
+    for start_r in 0..lines.len() {
+        let mut buffer:Vec<char> = vec!{};
+        for r_idx in start_r..lines.len() {
+            let row = lines.get(r_idx);
+            match row {
+                Some(v)=> {
+                    let col_idx = r_idx - start_r;
+                    let c = v.chars().nth(col_idx);
+                    match c {
+                        Some(v) => {
+                           buffer.push(v)
                         }
-                    },
-                    None => break
+                        None => break
+                    }
                 }
-                col_index += 1;
+                None=> break
             }
-           
-            t += find_xmas(&buffer);
         }
+        t+= find_xmas(&buffer);
     }
-    t
-    /*    for i in 0..lines.len() {
-           for c in 0..lines.len() {
-               let mut buffer: Vec<char> = vec![];
-               for r in 0..lines.len() {
-                   let row = lines.get(r);
-                   match row {
-                       Some(rw) => {
-                           let v = rw.chars().nth(r + c);
-                           match v {
-                               Some(c) => {
-                                   buffer.push(c)
-                               },
-                               None => break
-                           }
-                       },
-                       None => break
-                   }
-               }
-               println!("{:?}", buffer);
-           }
-       }
+    for start_col in 1..lines.len() {
+        let mut buffer:Vec<char> = vec!();
+        for r_idx in 0..lines.len() {
+            let row = lines.get(r_idx);
+            match row {
+                Some(v)=> {
+                    let col_idx = r_idx + start_col;
+                    let c = v.chars().nth(col_idx);
+                    match c {
+                        Some(v) => {
+                            buffer.push(v)
+                        }
+                        None => break
+                    }
+                }
+                None=> break
+            }
 
-    */
+        }
+        t+= find_xmas(&buffer);
+
+    }
+    
+    t
+}
+fn diagonals_ltr(input: &str) -> u32 {
+    let mut t = 0;
+    let lines: Vec<_> = input.lines().collect();
+    
+    let mut t = 0;
+    let start_col = lines.len()-1;
+    for start_r in 0..lines.len() {
+        let mut buffer:Vec<char> = vec!{};
+        for r_idx in start_r..lines.len() {
+            let row = lines.get(r_idx);
+            match row {
+                Some(v)=> {
+                    let col_idx = start_col - (r_idx - start_r);
+                    let c = v.chars().nth(col_idx);
+                    match c {
+                        Some(v) => {
+                            buffer.push(v)
+                        }
+                        None => break
+                    }
+                }
+                None=> break
+            }
+        }
+        t+= find_xmas(&buffer);
+    }
+    for start_col in (1..lines.len()-1).rev() {
+        let mut buffer:Vec<char> = vec!{};
+        for (r_idx, col_idx) in (0..start_col).rev().enumerate(){
+            let row = lines.get(r_idx);
+            match row {
+                Some(v)=> {
+                    let c = v.chars().nth(col_idx);
+                    match c {
+                        Some(v) => {
+                            buffer.push(v)
+                        }
+                        None => break
+                    }
+                }
+                None=> break
+            }
+        }
+        t+= find_xmas(&buffer);
+    }
+
+    t
+}
+fn rows(input: &str) -> u32 {
+    let mut n = 0;
+    input.lines().for_each(|l| {
+        let c = l.matches("XMAS").count();
+        if c > 0 {
+            n += c;
+        }
+    });
+    input.lines().for_each(|l| {
+        let c = l.matches("SAMX").count();
+        if c > 0 {
+            n +=c;
+        }
+    });
+    n as u32
 }
 pub fn part_one(input: &str) -> Option<u32> {
-    // handle lines
-    //    let chars = input.chars().collect::<Vec<_>>();
-    let n = input
-        .lines()
-        .map(|l| {
-            let chars = l.chars().collect::<Vec<char>>();
-            find_xmas(&chars)
-        })
-        .reduce(|a, b| a + b)?;
+    let n = rows(input);
     // now do rows
     let mut rows: Vec<Vec<char>> = Vec::new();
     let _: Vec<_> = input
@@ -118,14 +155,11 @@ pub fn part_one(input: &str) -> Option<u32> {
         .reduce(|a, b| a + b)
         .unwrap();
     let stride = input.lines().next().unwrap().len();
-    //    let char_vecs = input.lines().map(|line| {line.chars().collect::<Vec<char>>()}).collect::<Vec<_>>();
-    //    let mut flattened = char_vecs.iter().flatten().collect::<Vec<_>>();
-    let d_f = diagonals(input);
+    let d_rtl = diagonals_rtl(input);
+    let d_ltr = diagonals_ltr(input);
 
-    //    flattened.reverse();
-     let d_f_r = diagonals(input);
-
-    let n = n + r_n + d_f + d_f_r;
+    println!("rows: {n} cols: {r_n} rtl: {d_rtl} lrt: {d_ltr}");
+    let n = n + r_n + d_rtl + d_ltr;
 
     Some(n)
 }
@@ -156,7 +190,7 @@ mod tests {
     }
     #[test]
     fn test_id() {
-        let vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let vec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let step = 2;
         let result: Vec<_> = vec.iter().step_by(step).cloned().collect();
         println!("{:?}", result)
