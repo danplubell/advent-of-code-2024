@@ -18,7 +18,7 @@ fn find_xmas(chars: &[char]) -> u32 {
 }
 fn diagonals_rtl(input: &str) -> u32 {
     let lines: Vec<_> = input.lines().collect();
-    let mut t = 0;
+    let mut total = 0;
     for start_r in 0..lines.len() {
         let mut buffer:Vec<char> = vec!{};
         for r_idx in start_r..lines.len() {
@@ -37,7 +37,7 @@ fn diagonals_rtl(input: &str) -> u32 {
                 None=> break
             }
         }
-        t+= find_xmas(&buffer);
+        total+= find_xmas(&buffer);
     }
     for start_col in 1..lines.len() {
         let mut buffer:Vec<char> = vec!();
@@ -58,17 +58,16 @@ fn diagonals_rtl(input: &str) -> u32 {
             }
 
         }
-        t+= find_xmas(&buffer);
+        total+= find_xmas(&buffer);
 
     }
     
-    t
+    total
 }
 fn diagonals_ltr(input: &str) -> u32 {
-    let mut t = 0;
     let lines: Vec<_> = input.lines().collect();
     
-    let mut t = 0;
+    let mut total = 0;
     let start_col = lines.len()-1;
     for start_r in 0..lines.len() {
         let mut buffer:Vec<char> = vec!{};
@@ -88,9 +87,9 @@ fn diagonals_ltr(input: &str) -> u32 {
                 None=> break
             }
         }
-        t+= find_xmas(&buffer);
+        total+= find_xmas(&buffer);
     }
-    for start_col in (1..lines.len()-1).rev() {
+    for start_col in (1..lines.len()).rev() {
         let mut buffer:Vec<char> = vec!{};
         for (r_idx, col_idx) in (0..start_col).rev().enumerate(){
             let row = lines.get(r_idx);
@@ -107,10 +106,10 @@ fn diagonals_ltr(input: &str) -> u32 {
                 None=> break
             }
         }
-        t+= find_xmas(&buffer);
+        total+= find_xmas(&buffer);
     }
 
-    t
+    total
 }
 fn rows(input: &str) -> u32 {
     let mut n = 0;
@@ -129,7 +128,7 @@ fn rows(input: &str) -> u32 {
     n as u32
 }
 pub fn part_one(input: &str) -> Option<u32> {
-    let n = rows(input);
+    let row_count = rows(input);
     // now do rows
     let mut rows: Vec<Vec<char>> = Vec::new();
     let _: Vec<_> = input
@@ -154,12 +153,11 @@ pub fn part_one(input: &str) -> Option<u32> {
         .map(|r| find_xmas(r))
         .reduce(|a, b| a + b)
         .unwrap();
-    let stride = input.lines().next().unwrap().len();
     let d_rtl = diagonals_rtl(input);
     let d_ltr = diagonals_ltr(input);
 
-    println!("rows: {n} cols: {r_n} rtl: {d_rtl} lrt: {d_ltr}");
-    let n = n + r_n + d_rtl + d_ltr;
+    println!("rows: {row_count} cols: {r_n} rtl: {d_rtl} lrt: {d_ltr}");
+    let n = row_count + r_n + d_rtl + d_ltr;
 
     Some(n)
 }
