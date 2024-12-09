@@ -59,7 +59,8 @@ pub fn part_one(input: &str) -> Option<u32> {
                     rules.insert(new_rule_key, (*new_rule_list).to_owned());
                 }
                 false => {
-                    let new_rule_list: Vec<&str> = vec![new_rule_key];
+                    let mut new_rule_list: Vec<&str> = vec![new_rule_key];
+                    new_rule_list.push(new_rule_page);
                     rules.insert(new_rule_key, new_rule_list);
                 }
             }
