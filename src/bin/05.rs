@@ -9,11 +9,11 @@ fn is_rule(line: &str) -> bool{
 fn is_update(line: &str) -> bool {
     line.chars().any(|c| c == ',')
 }
-fn are_rules_satisfied(page: &str, update_pages: &Vec<&str>, rules: &Vec<&str>)-> bool {
-    let page_idx = update_pages.iter().position(|p| *p == page).unwrap();
+fn are_rules_satisfied(page: &str, updated_pages: &Vec<&str>, rules: &Vec<&str>)-> bool {
+    let page_idx = updated_pages.iter().position(|p| *p == page).unwrap();
     
     for r in rules.iter() {
-        let r_opt = update_pages.iter().position(|p| *p == *r);
+        let r_opt = updated_pages.iter().position(|p| *p == *r);
         if let Some(r_idx) = r_opt {
             if page_idx > r_idx {
                 return false;
@@ -22,22 +22,22 @@ fn are_rules_satisfied(page: &str, update_pages: &Vec<&str>, rules: &Vec<&str>)-
     }
     true
 }
-fn is_update_ok(rules: &HashMap<&str, Vec<&str>>, update_pages: &Vec<&str>) -> bool{
+fn is_update_ok(rules: &HashMap<&str, Vec<&str>>, updated_pages: &Vec<&str>) -> bool{
     //for each rule check to see if it is satisfied
-    for page in update_pages.iter() {
+    for page in updated_pages.iter() {
         let rules_for_page_opt = rules.get(page);
         if let Some(rules_for_page) = rules_for_page_opt {
-            if !are_rules_satisfied(page, update_pages, rules_for_page) {
+            if !are_rules_satisfied(page, updated_pages, rules_for_page) {
                 return false
             }
         }
     }
     true
 }
-fn find_middle(update_pages: &Vec<&str>)->u32 {
-    let len = update_pages.len() as f64;
+fn find_middle(updated_pages: &Vec<&str>)->u32 {
+    let len = updated_pages.len() as f64;
     let idx = (len / 2_f64) as usize;
-    let page = update_pages.get(idx).unwrap();
+    let page = updated_pages.get(idx).unwrap();
     page.parse::<u32>().unwrap()
 }
 pub fn part_one(input: &str) -> Option<u32> {
@@ -66,9 +66,10 @@ pub fn part_one(input: &str) -> Option<u32> {
             }
         }
         if is_update(l) {
-            let update_pages: Vec<_> = l.split(",").collect();
-            if is_update_ok(&rules, &update_pages)  {
-                let middle: u32 = find_middle(&update_pages);
+            let updated_pages: Vec<_> = l.split(",").collect();
+            if !is_update_ok(&rules, &updated_pages)  {
+                let corrected_pages = fix_updated_pages(&rules, &updated_pages)
+                let middle: u32 = find_middle(&updated_pages);
                 total += middle;
             }
         }
