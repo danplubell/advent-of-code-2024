@@ -68,7 +68,6 @@ pub fn part_one(input: &str) -> Option<u32> {
         if is_update(l) {
             let updated_pages: Vec<_> = l.split(",").collect();
             if !is_update_ok(&rules, &updated_pages)  {
-                let corrected_pages = fix_updated_pages(&rules, &updated_pages)
                 let middle: u32 = find_middle(&updated_pages);
                 total += middle;
             }
