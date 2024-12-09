@@ -77,7 +77,39 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut rules:HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut total = 0;
+    input.lines().for_each(|l| {
+        // is it a rule or updates
+        if is_rule(l) {
+            // add to hashMap
+            // get key
+            let rule_parts: Vec<_> = l.split("|").collect();
+            let new_rule_key = rule_parts.get(0).unwrap();
+            let new_rule_page = rule_parts.get(1).unwrap();
+            match rules.contains_key(new_rule_key) {
+                true => {
+                    let rule_list = rules.get_mut(new_rule_key).unwrap();
+                    rule_list.push(new_rule_page);
+                    let new_rule_list = rule_list.clone();
+                    rules.insert(new_rule_key, (*new_rule_list).to_owned());
+                }
+                false => {
+                    let mut new_rule_list: Vec<&str> = vec![new_rule_key];
+                    new_rule_list.push(new_rule_page);
+                    rules.insert(new_rule_key, new_rule_list);
+                }
+            }
+        }
+        if is_update(l) {
+            let updated_pages: Vec<_> = l.split(",").collect();
+            if !is_update_ok(&rules, &updated_pages)  {
+                let middle: u32 = find_middle(&updated_pages);
+                total += middle;
+            }
+        }
+    });
+    Some(total)
 }
 
 #[cfg(test)]
