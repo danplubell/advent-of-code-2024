@@ -13,7 +13,6 @@ fn are_rules_satisfied(page: &str, update_pages: &Vec<&str>, rules: &Vec<&str>)-
     let page_idx = update_pages.iter().position(|p| *p == page).unwrap();
     
     for r in rules.iter() {
-        println!("{r} {:?}", update_pages);
         let r_opt = update_pages.iter().position(|p| *p == *r);
         if let Some(r_idx) = r_opt {
             if page_idx > r_idx {
@@ -69,7 +68,6 @@ pub fn part_one(input: &str) -> Option<u32> {
             let update_pages: Vec<_> = l.split(",").collect();
             if is_update_ok(&rules, &update_pages)  {
                 let middle: u32 = find_middle(&update_pages);
-                println!("{middle} {:?}", update_pages);
                 total += middle;
             }
         }
