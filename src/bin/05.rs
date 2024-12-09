@@ -67,7 +67,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         }
         if is_update(l) {
             let updated_pages: Vec<_> = l.split(",").collect();
-            if !is_update_ok(&rules, &updated_pages)  {
+            if is_update_ok(&rules, &updated_pages)  {
                 let middle: u32 = find_middle(&updated_pages);
                 total += middle;
             }
@@ -76,6 +76,32 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(total)
 }
 
+
+fn fix_pages<'a>(rules: &HashMap<&str, Vec<&str>>, updated_pages: &Vec<&'a str>) -> Vec<&'a str> {
+    let mut working_pages = updated_pages.clone();
+    //for each rule check to see if it is satisfied
+    for page in updated_pages.iter() {
+        let rules_for_page_opt = rules.get(page);
+        if let Some(rules_for_page) = rules_for_page_opt {
+            let page_idx = updated_pages.iter().position(|p| *p == *page).unwrap();
+            for r in rules_for_page.iter() {
+                let r_opt = updated_pages.iter().position(|p| *p == *r);
+                if let Some(r_idx) = r_opt {
+                    if page_idx > r_idx {
+                        println!("before: {} {} {} {}  {:?} {:?}",page, page_idx, r, r_idx, working_pages, updated_pages);
+                        let removed = working_pages.remove(r_idx);
+                        println!("removed: {} {} {} {} {} {:?} {:?}", page, page_idx, r, r_idx, removed, working_pages, updated_pages);
+
+                        let new_ids = working_pages.iter().position(|p| *p == *page).unwrap();
+                        working_pages.insert(new_ids + 1, removed);
+                        println!("after: {:?}",working_pages);
+                    }
+                }
+            }
+        }
+    }
+    working_pages
+}
 pub fn part_two(input: &str) -> Option<u32> {
     let mut rules:HashMap<&str, Vec<&str>> = HashMap::new();
     let mut total = 0;
@@ -104,7 +130,11 @@ pub fn part_two(input: &str) -> Option<u32> {
         if is_update(l) {
             let updated_pages: Vec<_> = l.split(",").collect();
             if !is_update_ok(&rules, &updated_pages)  {
-                let middle: u32 = find_middle(&updated_pages);
+                let corrected_pages = fix_pages(&rules, &updated_pages);
+                println!("{:?}", corrected_pages);
+                let is_fixed = is_update_ok(&rules, &corrected_pages);
+                println!("fixed? {is_fixed}");
+                let middle: u32 = find_middle(&corrected_pages);
                 total += middle;
             }
         }
