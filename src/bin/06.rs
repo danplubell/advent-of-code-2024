@@ -127,8 +127,36 @@ fn check_move(direction: Option<Direction>, row: Option<usize>, col: Option<usiz
 
 
  */
-fn get_next_move(guard: &Guard, input: &str) -> Option<Move> {
-    None
+fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: Option<Col>,input: &str) -> Option<Move> {
+    match (direction, curr_row, curr_col) {
+        (Some(d), Some(r), Some(c)) => {
+            let (new_r, new_c) = match d {
+                Direction::Up => (r.checked_sub(1), Some(c)),
+                Direction::Down => (r.checked_add(1), Some(c)),
+                Direction::Left => (Some(r), c.checked_sub(1)),
+                Direction::Right => (Some(r), c.checked_add(1)),
+            };
+            match (new_r, new_c) {
+                (Some(r), Some(c)) => {
+                    if let Some(row) = input.lines().nth(r as usize) {
+                        let c = row.chars().nth(c as usize);
+                        // there is a character compare it to obstacle
+                        if c.is_some()  && !(c.unwrap() == '#') {
+                            Some(Move {
+                                row: new_r.unwrap(),
+                                col: new_c.unwrap(),
+                            })
+                        } else {
+                            None
+                        }
+                    }
+                }
+                _ => None
+            }
+
+        }
+        _=> None,
+    }
 }
 fn can_move_there(next_move: &Move, input: &str) -> bool {
     //check for out of bounds
@@ -157,7 +185,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     let mut guard: Guard = find_guard(input).unwrap();
     let mut total: u32 = 0;
     loop {
-        let result = get_next_move(&guard, input).filter(|m| can_move_there(m, input)).map(|m| {
+        let result = get_next_move(guard.direction,guard.row, guard.col, input).filter(|m| can_move_there(m, input)).map(|m| {
             total += 1;
             // update the guard with the new row and column, same direction
             guard = Guard {
