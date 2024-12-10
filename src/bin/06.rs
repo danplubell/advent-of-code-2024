@@ -52,82 +52,7 @@ fn is_obstacle(char: char) -> bool {
 }
 type Row = u32;
 type Col = u32;
-// get the next row and col based on the current direction
-/*
-fn next_row_col(direction: Option<Direction>, row: Option<Row>, col: Option<Col>, input: &str) -> Option<Move>{
-    match (direction, row, col) {
-        (Some(direction), Some(r), Some(c)) => {
-            Direction::Up => Move {row: r.checked_sub(1), col: Some(c)}}//(r.checked_sub(1), Some(c)),
-            /*
-            Direction::Down => (r.checked_add(1), Some(c)),
-            Direction::Left => (Some(r), c.checked_sub(1)),
-            Direction::Right => (Some(r), c.checked_add(1)),
-            
-             */
-            _ => ()
-        }
-        _ => ()
-    }
-}
-fn get_next_move(direction: Option<Direction>, row: Option<usize>, col: Option<usize>, input: &str) -> Option<Move> {
-    let (r,c ) = match (direction, row, col) {
-        
-        // get new row and column
-        (Some(direction), Some(r), Some(c)) => {
-            let (new_r, new_c) = match direction {
-                Direction::Up => (r.checked_sub(1), Some(c)),
-                Direction::Down => (r.checked_add(1), Some(c)),
-                Direction::Left => (Some(r), c.checked_sub(1)),
-                Direction::Right => (Some(r), c.checked_add(1)),
-            };
-            match (new_r, new_c) {
-                (Some(r), Some(c)) => {
-                    if let Some(row) = input.lines().nth(r) {
-                        if row.chars().nth(c).is_some() {
-                            (new_r, new_c)
-                        } else {
-                            (None, None)
-                        }
-                    }
-                    (None, None)
-                }
-                _ => (None, None)
-            }
-        }
-        _=> (None, None)
-    };
-    Some(Move { row: r, col: c})
-}
-fn check_move(direction: Option<Direction>, row: Option<usize>, col: Option<usize>, input: &str) -> bool {
-   match (direction, row, col) {
-       (Some(direction), Some(r), Some(c)) => {
-           let (new_r, new_c) = match direction {
-               Direction::Up => (r.checked_sub(1), Some(c)),
-               Direction::Down => (r.checked_add(1), Some(c)),
-               Direction::Left => (Some(r), c.checked_sub(1)),
-               Direction::Right => (Some(r), c.checked_add(1)),
-           };
-           match (new_r, new_c) {
-               (Some(r), Some(c)) => {
-                   if let Some(row) = input.lines().nth(r) {
-                       if row.chars().nth(c).is_some() {
-                           return true
-                       } else {
-                           return false
-                       }
-                   }
-               }
-               _ => return false
-           }
-       }
-       _ => return false
-   }
-    false
-}
-
-
- */
-fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: Option<Col>,input: &str) -> Option<Move> {
+fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: Option<Col>) -> Option<Move> {
     match (direction, curr_row, curr_col) {
         (Some(d), Some(r), Some(c)) => {
             let (new_r, new_c) = match d {
@@ -136,56 +61,44 @@ fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: 
                 Direction::Left => (Some(r), c.checked_sub(1)),
                 Direction::Right => (Some(r), c.checked_add(1)),
             };
-            match (new_r, new_c) {
-                (Some(r), Some(c)) => {
-                    if let Some(row) = input.lines().nth(r as usize) {
-                        let c = row.chars().nth(c as usize);
-                        // there is a character compare it to obstacle
-                        if c.is_some()  && !(c.unwrap() == '#') {
-                            Some(Move {
-                                row: new_r.unwrap(),
-                                col: new_c.unwrap(),
-                            })
-                        } else {
-                            None
-                        }
-                    }
-                }
-                _ => None
-            }
-
+            Some(Move{
+                row: new_r?,
+                col: new_c?
+            })
         }
-        _=> None,
+        _ => None,
     }
 }
-fn can_move_there(next_move: &Move, input: &str) -> bool {
+fn can_move_there(next_move: &Move, input: &str) -> Option<bool> {
     //check for out of bounds
     //check for obstacle
-    true
+    
+    let (r, c) = (next_move.row, next_move.col);
+    {
+        let new_row = input.lines().nth(r as usize);
+        if new_row.is_some() {
+            let char = new_row.unwrap().chars().nth(c as usize);
+            if char.is_some() {
+                if !is_obstacle(char.unwrap()) {
+                    Some(true)
+                } else {
+                    Some(false)
+                }
+            } else {
+                None
+            }
+            
+        } else {
+            None
+        }
+    }
 }
-/*fn move_guard(guard: &mut Guard, input: &str) -> (bool, Option<Guard>) {
-    let len = input.lines().count();
-    let line_len = input.lines().next().unwrap().len();
-    let next_move = get_next_move(guard, input);
-    next_move.filter(|m| can_move_there(m, input)).map(|m|{
-                     let new_guard = Guard {
-            direction: guard.direction,
-            row: Some(m.row),
-            column: Some(m.col),
-        };
-        (true, Some(new_guard))
-
-    }).unwrap_or((false, None))
-
-}
-
- */
 
 pub fn part_one(input: &str) -> Option<u32> {
     let mut guard: Guard = find_guard(input).unwrap();
     let mut total: u32 = 0;
     loop {
-        let result = get_next_move(guard.direction,guard.row, guard.col, input).filter(|m| can_move_there(m, input)).map(|m| {
+        let result = get_next_move(guard.direction,guard.row, guard.column).filter(|m| can_move_there(m, input)).map(|m| {
             total += 1;
             // update the guard with the new row and column, same direction
             guard = Guard {
@@ -195,20 +108,27 @@ pub fn part_one(input: &str) -> Option<u32> {
             };
         });
         if result.is_none() {
-            let new_direction = new_direction(&guard, input);
+            let new_direction = new_direction(&guard.direction);
+            println!("next move failed : {:?}", new_direction);
             // update the guard with the same row, column, but new direction
             guard = Guard {
                 row: guard.row,
                 column: guard.column,
-                direction: new_direction
+                direction: Some(new_direction)
             }
         }
     }
 }
 
 
-fn new_direction(guard: &Guard, input: &str) -> Option<Direction> {
-    None
+fn new_direction(direction: &Option<Direction>) -> Direction {
+    let d = direction.as_ref().unwrap();
+    match d {
+        Direction::Up => Direction::Right,
+        Direction::Down => Direction::Left,
+        Direction::Left => Direction::Up,
+        Direction::Right => Direction::Down,
+    }
 }
 pub fn part_two(input: &str) -> Option<u32> {
     None
