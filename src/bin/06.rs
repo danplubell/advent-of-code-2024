@@ -99,11 +99,12 @@ fn can_move_there(next_move: &Move, input: &str) -> Option<bool> {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let max_row = input.lines().count() -1;
-    let max_col = input.lines().next().unwrap().chars().count()-1;
+    let max_row = input.lines().count() ;
+    let max_col = input.lines().next().unwrap().chars().count();
     let mut guard: Guard = find_guard(input).unwrap();
-  
-    let mut total: u32 = 0;
+    let mut moves: Vec<(Row,Col)> = vec![];
+    let mut total: u32 = 1;
+    moves.push((guard.row.unwrap(), guard.column.unwrap()));
     loop {
         let next_move = get_next_move(guard.direction,guard.row, guard.column,max_row, max_col);
         if next_move.is_none() {
@@ -111,7 +112,13 @@ pub fn part_one(input: &str) -> Option<u32> {
         }
         let can_move = can_move_there(&next_move.unwrap(), input).unwrap();
         if can_move {
-            total +=1;
+            let new_move = (next_move.unwrap().row, next_move.unwrap().col);
+            // did the guard hit that spot already
+            let found = moves.iter().find(|m| m.0 == new_move.0 && m.1 == new_move.1);
+            if found.is_none() {
+                total +=1;
+                moves.push(new_move);
+            }
             guard = Guard {
                 row: Some(next_move.unwrap().row),
                 column: Some(next_move.unwrap().col),
