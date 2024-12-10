@@ -1,17 +1,19 @@
 advent_of_code::solution!(6);
 
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum Direction {
     Up,
     Down,
     Left,
     Right,
 }
+#[derive(Debug, PartialEq, Copy, Clone)]
 struct Guard {
     row: Option<Row>,
     column: Option<Col>,
     direction: Option<Direction>,
 }
-fn get_direction_from_char(char: Option<char>) -> Option<Direction>) {
+fn get_direction_from_char(char: Option<char>) -> Option<Direction> {
     match char {
         Some('v') => Some(Direction::Down),
         Some('<') => Some(Direction::Left),
@@ -44,7 +46,7 @@ fn is_obstacle(char: char) -> bool {
     char == '#'
 }
 
-struct Move {
+#[derive(Debug,PartialEq, Clone, Copy)]struct Move {
     row: Row,
     col: Col,
 }
@@ -129,15 +131,17 @@ fn get_next_move(guard: &Guard, input: &str) -> Option<Move> {
     None
 }
 fn can_move_there(next_move: &Move, input: &str) -> bool {
+    //check for out of bounds
+    //check for obstacle
     true
 }
-fn move_guard(guard: &mut Guard, input: &str) -> (bool, Option<Guard>) {
+/*fn move_guard(guard: &mut Guard, input: &str) -> (bool, Option<Guard>) {
     let len = input.lines().count();
     let line_len = input.lines().next().unwrap().len();
-    let next_move = get_next_move(&guard, input);
+    let next_move = get_next_move(guard, input);
     next_move.filter(|m| can_move_there(m, input)).map(|m|{
                      let new_guard = Guard {
-            direction: *guard.direction,
+            direction: guard.direction,
             row: Some(m.row),
             column: Some(m.col),
         };
@@ -145,33 +149,36 @@ fn move_guard(guard: &mut Guard, input: &str) -> (bool, Option<Guard>) {
 
     }).unwrap_or((false, None))
 
-/*    if let Some(ref move_pos) = next_move {
-        if can_move_there(&next_move, input: &str) {
-            let new_guard = Guard {
-                direction: *guard.direction,
-                row: Some(move_pos.row),
-                column: Some(move_pos.col),
-            };
-            return (true, Some(new_guard));
-        }
-    }
-
+}
 
  */
-    //(false, None)
-}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let mut guard: Guard = find_guard(input).unwrap();
     let mut total: u32 = 0;
     loop {
-        let move_opt = move_guard(&mut guard, input);
-//        match move_opt {
-//            true => { total += 1;}
-//            false => break,
+        let result = get_next_move(&guard, input).filter(|m| can_move_there(m, input)).map(|m| {
+            total += 1;
+            // update the guard with the new row and column, same direction
+            guard = Guard {
+                row: Some(m.row),
+                column: Some(m.col),
+                direction: guard.direction
+            };
+        });
+        if result.is_none() {
+            let new_direction = new_direction(&guard, input);
+            // update the guard with the same row, column, but new direction
+            guard = Guard {
+                row: guard.row,
+                column: guard.column,
+                direction: new_direction
+            }
         }
     }
-    None
 }
+
+
 fn new_direction(guard: &Guard, input: &str) -> Option<Direction> {
     None
 }
