@@ -52,7 +52,7 @@ fn is_obstacle(char: char) -> bool {
 }
 type Row = u32;
 type Col = u32;
-fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: Option<Col>) -> Option<Move> {
+fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: Option<Col>, max_row: usize, max_col: usize) -> Option<Move> {
     match (direction, curr_row, curr_col) {
         (Some(d), Some(r), Some(c)) => {
             let (new_r, new_c) = match d {
@@ -61,10 +61,14 @@ fn get_next_move(direction: Option<Direction>, curr_row: Option<Row>, curr_col: 
                 Direction::Left => (Some(r), c.checked_sub(1)),
                 Direction::Right => (Some(r), c.checked_add(1)),
             };
-            Some(Move{
-                row: new_r?,
-                col: new_c?
-            })
+            if new_r? < max_row as u32 && new_c? < max_col as u32 {
+                Some(Move{
+                    row: new_r?,
+                    col: new_c?
+                })
+            } else {
+                None
+            }
         }
         _ => None,
     }
@@ -78,8 +82,8 @@ fn can_move_there(next_move: &Move, input: &str) -> Option<bool> {
         let new_row = input.lines().nth(r as usize);
         if new_row.is_some() {
             let char = new_row.unwrap().chars().nth(c as usize);
-            if char.is_some() {
-                if !is_obstacle(char.unwrap()) {
+            if let Some(c) = char {
+                if !is_obstacle(c) {
                     Some(true)
                 } else {
                     Some(false)
@@ -95,21 +99,27 @@ fn can_move_there(next_move: &Move, input: &str) -> Option<bool> {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
+    let max_row = input.lines().count() -1;
+    let max_col = input.lines().next().unwrap().chars().count()-1;
     let mut guard: Guard = find_guard(input).unwrap();
+  
     let mut total: u32 = 0;
     loop {
-        let result = get_next_move(guard.direction,guard.row, guard.column).filter(|m| can_move_there(m, input)).map(|m| {
-            total += 1;
-            // update the guard with the new row and column, same direction
+        let next_move = get_next_move(guard.direction,guard.row, guard.column,max_row, max_col);
+        if next_move.is_none() {
+            break Some(total)
+        }
+        let can_move = can_move_there(&next_move.unwrap(), input).unwrap();
+        if can_move {
+            total +=1;
             guard = Guard {
-                row: Some(m.row),
-                column: Some(m.col),
+                row: Some(next_move.unwrap().row),
+                column: Some(next_move.unwrap().col),
                 direction: guard.direction
             };
-        });
-        if result.is_none() {
+
+        } else {
             let new_direction = new_direction(&guard.direction);
-            println!("next move failed : {:?}", new_direction);
             // update the guard with the same row, column, but new direction
             guard = Guard {
                 row: guard.row,
@@ -148,5 +158,17 @@ mod tests {
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
+    }
+    #[test]
+    fn test_get_next_move() {
+        let r = get_next_move(Some(Direction::Up), Some(0), Some(1), 5, 5);
+        assert!(r.is_none());
+        let r = get_next_move(Some(Direction::Down), Some(3), Some(0), 5, 5);
+        assert_eq!(r, Some(Move {
+            row: 4 as Row,
+            col: 0 as Row,
+        }));
+        let r = get_next_move(Some(Direction::Down), Some(5), Some(0), 5, 5);
+        assert!(r.is_none());
     }
 }
