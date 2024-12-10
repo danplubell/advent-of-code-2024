@@ -7,8 +7,8 @@ enum Direction {
     Right,
 }
 struct Guard {
-    row: Option<usize>,
-    column: Option<usize>,
+    row: Option<Row>,
+    column: Option<Col>,
     direction: Option<Direction>,
 }
 fn get_direction_from_char(char: Option<char>) -> Option<Direction>) {
@@ -30,8 +30,8 @@ fn find_guard(input: &str) -> Option<Guard> {
                 let direction_char = line.chars().nth(p);
                 let direction = get_direction_from_char(direction_char);
                 return Some(Guard {
-                    row: Some(i),
-                    column: Some(p),
+                    row: Some(i as Row),
+                    column: Some(p as Col),
                     direction,
                 });
             }
@@ -45,12 +45,13 @@ fn is_obstacle(char: char) -> bool {
 }
 
 struct Move {
-    row: Option<Row>,
-    col: Option<Col>,
+    row: Row,
+    col: Col,
 }
 type Row = u32;
 type Col = u32;
 // get the next row and col based on the current direction
+/*
 fn next_row_col(direction: Option<Direction>, row: Option<Row>, col: Option<Col>, input: &str) -> Option<Move>{
     match (direction, row, col) {
         (Some(direction), Some(r), Some(c)) => {
@@ -122,29 +123,51 @@ fn check_move(direction: Option<Direction>, row: Option<usize>, col: Option<usiz
     false
 }
 
-fn move_guard(guard: Guard, input: &str) -> bool {
+
+ */
+fn get_next_move(guard: &Guard, input: &str) -> Option<Move> {
+    None
+}
+fn can_move_there(next_move: &Move, input: &str) -> bool {
+    true
+}
+fn move_guard(guard: &mut Guard, input: &str) -> (bool, Option<Guard>) {
     let len = input.lines().count();
     let line_len = input.lines().next().unwrap().len();
-    // check move in current_direction
-   
-    let move_ok = check_move(guard.direction, guard.row, guard.col, input)
-    let move_one 
-    // if it's a good move
-        // move the guard, update the guard and return true
-    // get new direction
-    // if valid new direction
-        // move the guard, update the guard and return true
-    // otherwise return false
-    false
+    let next_move = get_next_move(&guard, input);
+    next_move.filter(|m| can_move_there(m, input)).map(|m|{
+                     let new_guard = Guard {
+            direction: *guard.direction,
+            row: Some(m.row),
+            column: Some(m.col),
+        };
+        (true, Some(new_guard))
+
+    }).unwrap_or((false, None))
+
+/*    if let Some(ref move_pos) = next_move {
+        if can_move_there(&next_move, input: &str) {
+            let new_guard = Guard {
+                direction: *guard.direction,
+                row: Some(move_pos.row),
+                column: Some(move_pos.col),
+            };
+            return (true, Some(new_guard));
+        }
+    }
+
+
+ */
+    //(false, None)
 }
 pub fn part_one(input: &str) -> Option<u32> {
     let mut guard: Guard = find_guard(input).unwrap();
     let mut total: u32 = 0;
     loop {
         let move_opt = move_guard(&mut guard, input);
-        match move_opt {
-            true => { total += 1;}
-            false => break,
+//        match move_opt {
+//            true => { total += 1;}
+//            false => break,
         }
     }
     None
