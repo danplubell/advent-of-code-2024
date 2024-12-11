@@ -1,5 +1,5 @@
 advent_of_code::solution!(6);
-
+use rayon::prelude::*;
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum Direction {
     Up,
@@ -175,7 +175,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     println!("max: {} {}", max_row, max_col);
     'main: for (i, r) in input.lines().enumerate() {
         for (j, c) in r.chars().enumerate() {
-            println!("cycle: {} {}",i,j);
+            println!("cycle: {} {} {}",i,j, total);
             let new_input = place_obstacle(input, i, j);
             guard = find_guard(input).unwrap();
             moves = vec![];
