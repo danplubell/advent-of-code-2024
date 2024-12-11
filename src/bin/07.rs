@@ -3,7 +3,7 @@ advent_of_code::solution!(7);
 fn pop(stack: &mut Vec<Option<Token>>) -> Option<Token> {
     stack.pop()?
 }
-fn push( stack: &mut Vec<Option<Token>>, t: Option<Token>)  {
+fn push(stack: &mut Vec<Option<Token>>, t: Option<Token>) {
     stack.push(t);
 }
 
@@ -14,14 +14,11 @@ enum Token {
     Multiply,
 }
 fn tokenize(s: &str) -> Option<Token> {
-    s.parse::<u32>()
-        .ok()
-        .map(Token::Number)
-        .or(match s {
-            "+" => Some(Token::Plus),
-            "*" => Some(Token::Multiply),
-            _ => None,
-        })
+    s.parse::<u32>().ok().map(Token::Number).or(match s {
+        "+" => Some(Token::Plus),
+        "*" => Some(Token::Multiply),
+        _ => None,
+    })
 }
 fn evaluate(input: Vec<&str>) -> Option<u32> {
     let mut stack: Vec<Option<Token>> = vec![];
@@ -39,18 +36,17 @@ fn evaluate(input: Vec<&str>) -> Option<u32> {
                         // pop the number of the stack
                         let n = pop(&mut stack);
                         if let Some(Token::Number(n)) = n {
-                            
                             push(&mut stack, Some(Token::Number(n * v)))
                         }
-                    },
-                    Some(Token::Plus)=>{
+                    }
+                    Some(Token::Plus) => {
                         // pop the number of the stack
                         let n = pop(&mut stack);
                         if let Some(Token::Number(n)) = n {
                             push(&mut stack, Some(Token::Number(n + v)))
                         }
                     }
-                    _=> push(&mut stack, Some(Token::Number(v)))
+                    _ => push(&mut stack, Some(Token::Number(v))),
                 }
             }
             None => {}
@@ -59,34 +55,47 @@ fn evaluate(input: Vec<&str>) -> Option<u32> {
     let t = pop(&mut stack);
     match t {
         Some(Token::Number(v)) => Some(v),
-        _ => None
+        _ => None,
     }
 }
-        /*
-        if c.is_ascii_digit() {
-            let operation = pop();
-            match operation {
-                Some('+') => {
-                    let n = pop();
-                    if let Some(v) = n {
-                        let t = t + v.to_digit(10).unwrap();
-                        push();
-                    }
-                },
-                Some('*') => {
-                    let n = pop();
-                },
-                _ => {push(c); return t;},
-            }
-        }
-        t
-    });
-
-         */
-    
 
 pub fn part_one(input: &str) -> Option<u32> {
-    None
+    let mut total = 0;
+    for l in input.lines() {
+        //parse out the value from the list of value
+        let s = l.split(':').collect::<Vec<&str>>();
+        let target = s[0].parse::<u32>().ok()?;
+        let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
+        let plus = vec!["+"; numbers.len()];
+        let mut all_plus: Vec<&str> = numbers
+            .iter()
+            .zip(plus.iter())
+            .flat_map(|(&x, &y)| vec![x, y])
+            .collect();
+        all_plus.pop();
+        let result = evaluate(all_plus)?;
+        println!("add {} {} ", target, result);
+        if result == target {
+            total += target;
+            continue;
+        }
+
+        let mul = vec!["*"; numbers.len()];
+        let mut all_mul: Vec<&str> = numbers
+            .iter()
+            .zip(mul.iter())
+            .flat_map(|(&x, &y)| vec![x, y])
+            .collect();
+        all_mul.pop();
+        let result = evaluate(all_mul)?;
+        println!("mul {} {} ", target, result);
+        if result == target {
+            total += target;
+            continue;
+        }
+        // now go through all the other patterns
+    }
+    Some(total)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
@@ -100,7 +109,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(3749));
     }
 
     #[test]
@@ -115,13 +124,13 @@ mod tests {
         let t = tokenize("*").unwrap();
         assert_eq!(t, Token::Multiply);
         let t = tokenize("-");
-        assert_eq!(t, None );
+        assert_eq!(t, None);
         let t = tokenize("1").unwrap();
         assert_eq!(t, Token::Number(1));
     }
     #[test]
     fn text_evaluate() {
-        assert_eq!(evaluate(vec![]),None);
+        assert_eq!(evaluate(vec![]), None);
         let s = vec!["1"];
         assert_eq!(evaluate(s), Some(1));
         let s = vec!["1", "2"];
@@ -130,6 +139,5 @@ mod tests {
         assert_eq!(evaluate(s), Some(4));
         let s = vec!["2", "*", "3"];
         assert_eq!(evaluate(s), Some(6));
-
     }
 }
