@@ -72,64 +72,7 @@ const MULTIPLY: &str = "*";
 pub fn part_one(input: &str) -> Option<u32> {
     let mut total = 0;
     for l in input.lines() {
-       
-        //parse out the value from the list of value
-        let s = l.split(':').collect::<Vec<&str>>();
-        let target = s[0].parse::<u32>().ok()?;
-        let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
-        let plus = vec![PLUS; numbers.len()];
-        let mut all_plus: Vec<&str> = numbers
-            .iter()
-            .zip(plus.iter())
-            .flat_map(|(&x, &y)| vec![x, y])
-            .collect();
-        all_plus.pop();
-        let result = evaluate(all_plus)?;
-        if result == target {
-            total += target;
-            continue;
-        }
-
-        let mul = vec![MULTIPLY; numbers.len()];
-        let mut all_mul: Vec<&str> = numbers
-            .iter()
-            .zip(mul.iter())
-            .flat_map(|(&x, &y)| vec![x, y])
-            .collect();
-        all_mul.pop();
-        let result = evaluate(all_mul)?;
-        if result == target {
-            total += target;
-            continue;
-        }
-       
-        
-        // now go through all the other patterns
-        //generate patterns
-        // how big of a number do I need?
-        let pattern_len = 32 - numbers.len() as u32; // length of the operator list
-        let loop_len = u32::MAX >> pattern_len; // this is the number of iterations
-        for i in 0..=loop_len {
-            let f = format!("{:032b}", i);
-            let sub = f.split_at(pattern_len as usize);
-            let vec: Vec<_> = sub.1.chars().map(|c| {
-                match c {
-                    '0' => PLUS,
-                    _ => MULTIPLY
-                }
-            }).collect();
-            let mut to_solve: Vec<_> = numbers
-                .iter()
-                .zip(vec.iter())
-                .flat_map(|(&x, y)| vec![x, y])
-                .collect();
-            to_solve.pop();
-            let result = evaluate(to_solve)?;
-            if result == target {
-                total += target;
-                break;
-            }
-        }
+        println!("{}", l);
     }
     Some(total)
 }
