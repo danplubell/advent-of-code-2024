@@ -133,10 +133,10 @@ pub fn part_one(input: &str) -> Option<u32> {
                 .collect();
 
             to_solve.pop();
-            println!("{:?}",to_solve );
+           let to_solve_copy = to_solve.clone();
             let result = evaluate(to_solve).unwrap_or(0);
             if result == target {
-                println!{"{} {} {}",  target, result, total};
+                println!{"{:?} {} {} {}", to_solve_copy, target, result, total};
                 total += target;
                 break;
             }
