@@ -104,7 +104,6 @@ fn can_move_there(next_move: &Move, input: &str) -> Option<bool> {
     }
 }
 
-
 pub fn part_one(input: &str) -> Option<u32> {
     let max_row = input.lines().count();
     let max_col = input.lines().next().unwrap().chars().count();
@@ -168,46 +167,51 @@ fn place_obstacle(input: &str, row: usize, col: usize) -> String {
         .join("\n")
 }
 pub fn part_two(input: &str) -> Option<u32> {
-    let max_row = input.lines().count() ;
+    let max_row = input.lines().count();
     let max_col = input.lines().next().unwrap().chars().count();
     let mut guard: Guard = find_guard(input).unwrap();
-    let mut total: u32 = 1;
-    let mut moves: Vec<(Row,Col)> = vec![];
-
+    let mut total: u32 = 0;
+    let mut moves: Vec<(Row, Col)> = vec![];
+    println!("max: {} {}", max_row, max_col);
     'main: for (i, r) in input.lines().enumerate() {
         for (j, c) in r.chars().enumerate() {
+            println!("cycle: {} {}",i,j);
             let new_input = place_obstacle(input, i, j);
+            guard = find_guard(input).unwrap();
+            moves = vec![];
             loop {
-                let next_move = get_next_move(guard.direction,guard.row, guard.column,max_row, max_col);
+                let next_move =
+                    get_next_move(guard.direction, guard.row, guard.column, max_row, max_col);
                 if next_move.is_none() {
                     break;
                 }
                 let can_move = can_move_there(&next_move.unwrap(), &new_input).unwrap();
                 if can_move {
                     let new_move = (next_move.unwrap().row, next_move.unwrap().col);
-                    // did the guard hit that spot already
-                    let found = moves.iter().find(|m| m.0 == new_move.0 && m.1 == new_move.1);
-                    if found.is_none() {
-                        total +=1;
-                        moves.push(new_move);
+                    let visited = moves.iter().find(|m| m.0==new_move.0 && m.1==new_move.1);
+                    if visited.is_some() {
+                       let visits =  moves.iter().filter(|m| m.0==new_move.0 && m.1==new_move.1).count();
+                        if visits > 4 {
+                            total += 1;
+                            break;
+                        }
                     }
+                    moves.push(new_move);
                     guard = Guard {
                         row: Some(next_move.unwrap().row),
                         column: Some(next_move.unwrap().col),
-                        direction: guard.direction
+                        direction: guard.direction,
                     };
-
                 } else {
                     let new_direction = new_direction(&guard.direction);
                     // update the guard with the same row, column, but new direction
                     guard = Guard {
                         row: guard.row,
                         column: guard.column,
-                        direction: Some(new_direction)
+                        direction: Some(new_direction),
                     }
                 }
             }
-
         }
     }
     Some(total)
