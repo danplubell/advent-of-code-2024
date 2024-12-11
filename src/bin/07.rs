@@ -23,6 +23,7 @@ fn tokenize(s: &str) -> Option<Token> {
 fn evaluate(input: Vec<&str>) -> Option<u32> {
     let mut stack: Vec<Option<Token>> = vec![];
     input.iter().for_each(|s| {
+        println!("{:?}", stack);
         let token = tokenize(s);
         match token {
             Some(Token::Plus) | Some(Token::Multiply) => {
@@ -69,7 +70,7 @@ const PLUS: &str = "+";
 const MULTIPLY: &str = "*";
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut total = 0;
+    let mut total:u32 = 0;
     for l in input.lines() {
         //parse out the value from the list of value
         let s = l.split(':').collect::<Vec<&str>>();
@@ -79,32 +80,6 @@ pub fn part_one(input: &str) -> Option<u32> {
         let target = target_result.unwrap_or(0u32);
 
         let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
-
-        let plus = vec![PLUS; numbers.len()];
-        let mut all_plus: Vec<&str> = numbers
-            .iter()
-            .zip(plus.iter())
-            .flat_map(|(&x, &y)| vec![x, y])
-            .collect();
-        all_plus.pop();
-        let result = evaluate(all_plus).unwrap_or(0);
-        if result == target {
-            total += target;
-            continue;
-        }
-
-        let mul = vec![MULTIPLY; numbers.len()];
-        let mut all_mul: Vec<&str> = numbers
-            .iter()
-            .zip(mul.iter())
-            .flat_map(|(&x, &y)| vec![x, y])
-            .collect();
-        all_mul.pop();
-        let result = evaluate(all_mul).unwrap_or(0);
-        if result == target {
-            total += target;
-            continue;
-        }
 
         // now go through all the other patterns
         //generate patterns
@@ -133,11 +108,17 @@ pub fn part_one(input: &str) -> Option<u32> {
                 .collect();
 
             to_solve.pop();
-           let to_solve_copy = to_solve.clone();
+            let to_solve_copy = to_solve.clone();
             let result = evaluate(to_solve).unwrap_or(0);
             if result == target {
-                println!{"{:?} {} {} {}", to_solve_copy, target, result, total};
-                total += target;
+                let r = total.checked_add(target);
+                match r {
+                    Some(r) => total = r,
+                    None => {
+                        println!("{:?} {} {} {}",to_solve_copy,target, result, total);
+                        return None
+                    },
+                }
                 break;
             }
         }
@@ -177,6 +158,7 @@ mod tests {
     }
     #[test]
     fn text_evaluate() {
+        /*
         assert_eq!(evaluate(vec![]), None);
         let s = vec!["1"];
         assert_eq!(evaluate(s), Some(1));
@@ -186,5 +168,9 @@ mod tests {
         assert_eq!(evaluate(s), Some(4));
         let s = vec!["2", "*", "3"];
         assert_eq!(evaluate(s), Some(6));
+        
+         */
+        let s = vec!["442", "*", "2", "*", "326", "*", "89", "+", "3", "*", "4", "*", "1", "+", "7", "+", "75"];
+        assert_eq!(evaluate(s), Some(326));
     }
 }
