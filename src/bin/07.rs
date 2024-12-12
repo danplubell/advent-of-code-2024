@@ -9,21 +9,20 @@ fn push(stack: &mut Vec<Option<Token>>, t: Option<Token>) {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Token {
-    Number(u32),
+    Number(u64),
     Plus,
     Multiply,
 }
 fn tokenize(s: &str) -> Option<Token> {
-    s.parse::<u32>().ok().map(Token::Number).or(match s {
+    s.parse::<u64>().ok().map(Token::Number).or(match s {
         PLUS => Some(Token::Plus),
         MULTIPLY => Some(Token::Multiply),
         _ => None,
     })
 }
-fn evaluate(input: Vec<&str>) -> Option<u32> {
+fn evaluate(input: Vec<&str>) -> Option<u64> {
     let mut stack: Vec<Option<Token>> = vec![];
     input.iter().for_each(|s| {
-        println!("{:?}", stack);
         let token = tokenize(s);
         match token {
             Some(Token::Plus) | Some(Token::Multiply) => {
@@ -69,15 +68,15 @@ fn evaluate(input: Vec<&str>) -> Option<u32> {
 const PLUS: &str = "+";
 const MULTIPLY: &str = "*";
 
-pub fn part_one(input: &str) -> Option<u32> {
-    let mut total:u32 = 0;
+pub fn part_one(input: &str) -> Option<u64> {
+    let mut total:u64 = 0;
     for l in input.lines() {
         //parse out the value from the list of value
         let s = l.split(':').collect::<Vec<&str>>();
 
-        let target_result = s[0].parse::<u32>();
+        let target_result = s[0].parse::<u64>();
 
-        let target = target_result.unwrap_or(0u32);
+        let target = target_result.unwrap_or(0u64);
 
         let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
 
@@ -85,11 +84,11 @@ pub fn part_one(input: &str) -> Option<u32> {
         //generate patterns
         // how big of a number do I need?
 
-        let pattern_len = 32 - numbers.len() as u32; // length of the operator list
-        let loop_len = u32::MAX >> pattern_len; // this is the number of iterations
+        let pattern_len = 64 - numbers.len() as u64; // length of the operator list
+        let loop_len = u64::MAX >> pattern_len; // this is the number of iterations
 
         for i in 0..=loop_len {
-            let f = format!("{:032b}", i);
+            let f = format!("{:064b}", i);
 
             let sub = f.split_at(pattern_len as usize);
             let vec: Vec<_> = sub
@@ -115,7 +114,6 @@ pub fn part_one(input: &str) -> Option<u32> {
                 match r {
                     Some(r) => total = r,
                     None => {
-                        println!("{:?} {} {} {}",to_solve_copy,target, result, total);
                         return None
                     },
                 }
