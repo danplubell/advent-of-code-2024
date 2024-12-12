@@ -69,7 +69,7 @@ const PLUS: &str = "+";
 const MULTIPLY: &str = "*";
 
 pub fn part_one(input: &str) -> Option<u64> {
-    let mut total:u64 = 0;
+    let mut total: u64 = 0;
     for l in input.lines() {
         //parse out the value from the list of value
         let s = l.split(':').collect::<Vec<&str>>();
@@ -113,9 +113,7 @@ pub fn part_one(input: &str) -> Option<u64> {
                 let r = total.checked_add(target);
                 match r {
                     Some(r) => total = r,
-                    None => {
-                        return None
-                    },
+                    None => return None,
                 }
                 break;
             }
@@ -166,9 +164,29 @@ mod tests {
         assert_eq!(evaluate(s), Some(4));
         let s = vec!["2", "*", "3"];
         assert_eq!(evaluate(s), Some(6));
-        
+
          */
-        let s = vec!["442", "*", "2", "*", "326", "*", "89", "+", "3", "*", "4", "*", "1", "+", "7", "+", "75"];
+        let s = vec![
+            "442", "*", "2", "*", "326", "*", "89", "+", "3", "*", "4", "*", "1", "+", "7", "+",
+            "75",
+        ];
         assert_eq!(evaluate(s), Some(326));
+    }
+    #[test]
+    fn test_generate() {
+        let mut list: Vec<Vec<u32>> = vec![vec![0,0,0]];
+        let mut is_done = false;
+        
+        for n in 0..list.len() {
+                let patterns = list.clone();
+                let l = patterns.get(n).unwrap();
+                for i in 0..3 {
+                        let mut new_pattern = l.clone();
+                        new_pattern[i] = j;
+                        list.push(new_pattern);
+                    }
+                }
+            }
+        println!("{:?}", list);
     }
 }
