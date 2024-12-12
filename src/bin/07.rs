@@ -22,11 +22,20 @@ fn tokenize(s: &str) -> Option<Token> {
     })
 }
 fn evaluate(input: Vec<&str>) -> Option<u64> {
+    let input_copy = input.clone();
     let mut stack: Vec<Option<Token>> = vec![];
-    input.iter().for_each(|s| {
+    input.iter().enumerate().for_each(|(i,s)| {
         let token = tokenize(s);
         match token {
-            Some(Token::Concatenate) => {}
+            Some(Token::Concatenate) => {
+                let left = input_copy.get(i-1);
+                let right = input_copy.get(i+1);
+                if let (Some(r), Some(l)) = (left,right) {
+                    let combined = format!("{}{}", r, l);
+                    let new_number = combined.parse::<u64>().unwrap();
+                    stack.push(Some(Token::Number(new_number)))
+                }
+            }
             Some(Token::Plus) | Some(Token::Multiply) => {
                 push(&mut stack, token);
             }
@@ -69,6 +78,7 @@ fn evaluate(input: Vec<&str>) -> Option<u64> {
 
 const PLUS: &str = "+";
 const MULTIPLY: &str = "*";
+const CONCATENATE: &str = "~";
 
 pub fn part_one(input: &str) -> Option<u64> {
     let mut total: u64 = 0;
@@ -123,22 +133,21 @@ pub fn part_one(input: &str) -> Option<u64> {
     }
     Some(total)
 }
-fn generate_patterns(len:u64) -> Vec<Vec<Token>> {
-    let mut list: Vec<Vec<Token>> = vec![vec![Token::Plus,Token::Plus,Token::Plus]];
+fn generate_patterns<'a>(len:u64) -> Vec<Vec<&'a str>> {
+    let mut list: Vec<Vec<&str>> = vec![vec![PLUS,PLUS,PLUS]];
     let mut is_done = false;
-    let symbols = [Token::Plus, Token::Multiply, Token::Concatenate];
+    let symbols = [PLUS, MULTIPLY, CONCATENATE];
     for x in 0..3 {
         for n in 0..list.len() {
             let mut patterns = list.clone();
             let l = patterns.get(n).unwrap();
-
+            
             for i in 1..3 {
                 let mut new_pattern = l.clone();
                 new_pattern[x%3] = symbols[i];
                 list.push(new_pattern);
             }
         }
-
     }
     list
 }
@@ -155,22 +164,11 @@ pub fn part_two(input: &str) -> Option<u64> {
         let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
 
         let patterns = generate_patterns(numbers.len() as u64);
-        for i in 0..=patterns.len {
-            let f = format!("{:064b}", i);
-
-            let sub = f.split_at(pattern_len as usize);
-            let vec: Vec<_> = sub
-                .1
-                .chars()
-                .map(|c| match c {
-                    '0' => PLUS,
-                    _ => MULTIPLY,
-                })
-                .collect();
-
+        for pattern in patterns.iter() {
+            
             let mut to_solve: Vec<_> = numbers
                 .iter()
-                .zip(vec.iter())
+                .zip(pattern.iter())
                 .flat_map(|(&x, y)| vec![x, y])
                 .collect();
 
@@ -204,7 +202,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(11387));
     }
     #[test]
     fn test_tokenize() {
