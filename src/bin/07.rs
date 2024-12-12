@@ -12,6 +12,7 @@ enum Token {
     Number(u64),
     Plus,
     Multiply,
+    Concatenate,
 }
 fn tokenize(s: &str) -> Option<Token> {
     s.parse::<u64>().ok().map(Token::Number).or(match s {
@@ -25,6 +26,7 @@ fn evaluate(input: Vec<&str>) -> Option<u64> {
     input.iter().for_each(|s| {
         let token = tokenize(s);
         match token {
+            Some(Token::Concatenate) => {}
             Some(Token::Plus) | Some(Token::Multiply) => {
                 push(&mut stack, token);
             }
@@ -121,13 +123,76 @@ pub fn part_one(input: &str) -> Option<u64> {
     }
     Some(total)
 }
+fn generate_patterns(len:u64) -> Vec<Vec<Token>> {
+    let mut list: Vec<Vec<Token>> = vec![vec![Token::Plus,Token::Plus,Token::Plus]];
+    let mut is_done = false;
+    let symbols = [Token::Plus, Token::Multiply, Token::Concatenate];
+    for x in 0..3 {
+        for n in 0..list.len() {
+            let mut patterns = list.clone();
+            let l = patterns.get(n).unwrap();
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+            for i in 1..3 {
+                let mut new_pattern = l.clone();
+                new_pattern[x%3] = symbols[i];
+                list.push(new_pattern);
+            }
+        }
+
+    }
+    list
+}
+pub fn part_two(input: &str) -> Option<u64> {
+    let mut total: u64 = 0;
+    for l in input.lines() {
+        //parse out the value from the list of value
+        let s = l.split(':').collect::<Vec<&str>>();
+
+        let target_result = s[0].parse::<u64>();
+
+        let target = target_result.unwrap_or(0u64);
+
+        let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
+
+        let patterns = generate_patterns(numbers.len() as u64);
+        for i in 0..=patterns.len {
+            let f = format!("{:064b}", i);
+
+            let sub = f.split_at(pattern_len as usize);
+            let vec: Vec<_> = sub
+                .1
+                .chars()
+                .map(|c| match c {
+                    '0' => PLUS,
+                    _ => MULTIPLY,
+                })
+                .collect();
+
+            let mut to_solve: Vec<_> = numbers
+                .iter()
+                .zip(vec.iter())
+                .flat_map(|(&x, y)| vec![x, y])
+                .collect();
+
+            to_solve.pop();
+            let to_solve_copy = to_solve.clone();
+            let result = evaluate(to_solve).unwrap_or(0);
+            if result == target {
+                let r = total.checked_add(target);
+                match r {
+                    Some(r) => total = r,
+                    None => return None,
+                }
+                break;
+            }
+        }
+    }
+    Some(total)
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::Token::{Concatenate, Multiply, Plus};
     use super::*;
 
     #[test]
@@ -174,19 +239,7 @@ mod tests {
     }
     #[test]
     fn test_generate() {
-        let mut list: Vec<Vec<u32>> = vec![vec![0,0,0]];
-        let mut is_done = false;
-        
-        for n in 0..list.len() {
-                let patterns = list.clone();
-                let l = patterns.get(n).unwrap();
-                for i in 0..3 {
-                        let mut new_pattern = l.clone();
-                        new_pattern[i] = j;
-                        list.push(new_pattern);
-                    }
-                }
-            }
-        println!("{:?}", list);
+        let l = generate_patterns(3);
+        println!("{:?}", l);
     }
 }
