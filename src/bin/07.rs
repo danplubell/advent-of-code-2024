@@ -24,17 +24,16 @@ fn tokenize(s: &str) -> Option<Token> {
 fn evaluate(input: Vec<&str>) -> Option<u64> {
     let input_copy = input.clone();
     let mut stack: Vec<Option<Token>> = vec![];
-    input.iter().enumerate().for_each(|(i,s)| {
+    input.iter().enumerate().for_each(|(i, s)| {
         let token = tokenize(s);
         match token {
             Some(Token::Concatenate) => {
-                let left = input_copy.get(i-1);
-                let right = input_copy.get(i+1);
-                if let (Some(r), Some(l)) = (left,right) {
-                    let combined = format!("{}{}", r, l);
-                    let new_number = combined.parse::<u64>().unwrap();
-                    stack.push(Some(Token::Number(new_number)))
-                }
+                //                let left = input_copy.get(i-1);
+                //                let right = input_copy.get(i+1);
+                //                if let (Some(r), Some(l)) = (left,right) {
+                //                    let combined = format!("{}{}", r, l);
+                //                    let new_number = combined.parse::<u64>().unwrap();
+                push(&mut stack, token)
             }
             Some(Token::Plus) | Some(Token::Multiply) => {
                 push(&mut stack, token);
@@ -43,6 +42,14 @@ fn evaluate(input: Vec<&str>) -> Option<u64> {
                 // pop the operation off the stack
                 let operation = pop(&mut stack);
                 match operation {
+                    Some(Token::Concatenate) => {
+                        let right_n = pop(&mut stack);
+                        if let Some(Token::Number(rn)) = right_n {
+                            let combined = format!("{}{}", v , rn);
+                            let new_number = combined.parse::<u64>().unwrap();
+                            push(&mut stack, Some(Token::Number(new_number)));
+                        }
+                    }
                     Some(Token::Multiply) => {
                         // pop the number of the stack
                         let n = pop(&mut stack);
@@ -133,22 +140,26 @@ pub fn part_one(input: &str) -> Option<u64> {
     }
     Some(total)
 }
-fn generate_patterns<'a>(len:u64) -> Vec<Vec<&'a str>> {
-    let mut list: Vec<Vec<&str>> = vec![vec![PLUS,PLUS,PLUS]];
+fn generate_patterns<'a>(len: u64) -> Vec<Vec<&'a str>> {
+    let base_p = vec![];
+    
+    let mut list: Vec<Vec<&str>> = vec![vec![PLUS, PLUS, PLUS]];
     let mut is_done = false;
     let symbols = [PLUS, MULTIPLY, CONCATENATE];
     for x in 0..3 {
         for n in 0..list.len() {
             let mut patterns = list.clone();
             let l = patterns.get(n).unwrap();
-            
+
             for i in 1..3 {
                 let mut new_pattern = l.clone();
-                new_pattern[x%3] = symbols[i];
+                new_pattern[x % 3] = symbols[i];
+                println!("{:?}", new_pattern);
                 list.push(new_pattern);
             }
         }
     }
+    println!{"{}", list.len()}
     list
 }
 pub fn part_two(input: &str) -> Option<u64> {
@@ -165,7 +176,6 @@ pub fn part_two(input: &str) -> Option<u64> {
 
         let patterns = generate_patterns(numbers.len() as u64);
         for pattern in patterns.iter() {
-            
             let mut to_solve: Vec<_> = numbers
                 .iter()
                 .zip(pattern.iter())
@@ -173,7 +183,6 @@ pub fn part_two(input: &str) -> Option<u64> {
                 .collect();
 
             to_solve.pop();
-            let to_solve_copy = to_solve.clone();
             let result = evaluate(to_solve).unwrap_or(0);
             if result == target {
                 let r = total.checked_add(target);
@@ -190,8 +199,8 @@ pub fn part_two(input: &str) -> Option<u64> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Token::{Concatenate, Multiply, Plus};
     use super::*;
+    use crate::Token::{Concatenate, Multiply, Plus};
 
     #[test]
     fn test_part_one() {
