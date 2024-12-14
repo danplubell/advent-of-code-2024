@@ -139,6 +139,7 @@ fn generate_patterns<'a>(len: usize) -> Vec<Vec<&'a str>> {
     let base_p = (0..len).into_iter().map(|i| PLUS).collect();
     let mut list: Vec<Vec<&str>> = vec![base_p];
     let symbols = [PLUS, MULTIPLY, CONCATENATE];
+
     for x in 0..len {
         for n in 0..list.len() {
             let mut patterns = list.clone();
@@ -152,6 +153,30 @@ fn generate_patterns<'a>(len: usize) -> Vec<Vec<&'a str>> {
         }
     }
     list
+}
+
+fn generate_permutations(n: usize) -> Vec<Vec<&'static str>> {
+    let operators = vec!["+", "*", "~"];
+    let mut result = Vec::new();
+
+    // For a list of length n, we'll have 3^n total permutations
+    let total_permutations = 3_usize.pow(n as u32);
+
+    for i in 0..total_permutations {
+        let mut current_perm = Vec::with_capacity(n);
+        let mut num = i;
+
+        // Convert number to base-3 representation
+        for _ in 0..n {
+            let operator_index = num % 3;
+            current_perm.push(operators[operator_index]);
+            num /= 3;
+        }
+
+        result.push(current_perm);
+    }
+
+    result
 }
 pub fn part_two(input: &str) -> Option<u64> {
     let mut total: u64 = 0;
@@ -169,10 +194,10 @@ pub fn part_two(input: &str) -> Option<u64> {
         let patterns_opt = pattern_hash.get(&numbers.len());
         let patterns = match patterns_opt {
             Some(p) => p,
-            None => &generate_patterns(numbers.len()),
+            None => &generate_permutations(numbers.len()),
         };
         println!("process patterns: {}", patterns.len());
-        for (i,pattern) in patterns.iter().enumerate() {
+        for (i, pattern) in patterns.iter().enumerate() {
             let mut to_solve: Vec<_> = numbers
                 .iter()
                 .zip(pattern.iter())
@@ -247,5 +272,12 @@ mod tests {
         let l = generate_patterns(n);
         assert_eq!(l.len(), 3_usize.pow(n as u32));
         println!("{:?} {}", l, l.len());
+    }
+    #[test]
+    fn test_permutations() {
+        let n = 11;
+        let l = generate_permutations(n);
+        assert_eq!(l.len(), 3_usize.pow(n as u32));
+        println!(" {}", l.len());
     }
 }
