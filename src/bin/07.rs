@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 advent_of_code::solution!(7);
 
 fn pop(stack: &mut Vec<Option<Token>>) -> Option<Token> {
@@ -18,6 +20,7 @@ fn tokenize(s: &str) -> Option<Token> {
     s.parse::<u64>().ok().map(Token::Number).or(match s {
         PLUS => Some(Token::Plus),
         MULTIPLY => Some(Token::Multiply),
+        CONCATENATE => Some(Token::Concatenate),
         _ => None,
     })
 }
@@ -27,14 +30,7 @@ fn evaluate(input: Vec<&str>) -> Option<u64> {
     input.iter().enumerate().for_each(|(i, s)| {
         let token = tokenize(s);
         match token {
-            Some(Token::Concatenate) => {
-                //                let left = input_copy.get(i-1);
-                //                let right = input_copy.get(i+1);
-                //                if let (Some(r), Some(l)) = (left,right) {
-                //                    let combined = format!("{}{}", r, l);
-                //                    let new_number = combined.parse::<u64>().unwrap();
-                push(&mut stack, token)
-            }
+            Some(Token::Concatenate) => push(&mut stack, token),
             Some(Token::Plus) | Some(Token::Multiply) => {
                 push(&mut stack, token);
             }
@@ -45,7 +41,7 @@ fn evaluate(input: Vec<&str>) -> Option<u64> {
                     Some(Token::Concatenate) => {
                         let right_n = pop(&mut stack);
                         if let Some(Token::Number(rn)) = right_n {
-                            let combined = format!("{}{}", v , rn);
+                            let combined = format!("{}{}", rn, v);
                             let new_number = combined.parse::<u64>().unwrap();
                             push(&mut stack, Some(Token::Number(new_number)));
                         }
@@ -126,7 +122,6 @@ pub fn part_one(input: &str) -> Option<u64> {
                 .collect();
 
             to_solve.pop();
-            let to_solve_copy = to_solve.clone();
             let result = evaluate(to_solve).unwrap_or(0);
             if result == target {
                 let r = total.checked_add(target);
@@ -140,13 +135,11 @@ pub fn part_one(input: &str) -> Option<u64> {
     }
     Some(total)
 }
-fn generate_patterns<'a>(len: u64) -> Vec<Vec<&'a str>> {
-    let base_p = vec![];
-    
-    let mut list: Vec<Vec<&str>> = vec![vec![PLUS, PLUS, PLUS]];
-    let mut is_done = false;
+fn generate_patterns<'a>(len: usize) -> Vec<Vec<&'a str>> {
+    let base_p = (0..len).into_iter().map(|i| PLUS).collect();
+    let mut list: Vec<Vec<&str>> = vec![base_p];
     let symbols = [PLUS, MULTIPLY, CONCATENATE];
-    for x in 0..3 {
+    for x in 0..len {
         for n in 0..list.len() {
             let mut patterns = list.clone();
             let l = patterns.get(n).unwrap();
@@ -154,17 +147,17 @@ fn generate_patterns<'a>(len: u64) -> Vec<Vec<&'a str>> {
             for i in 1..3 {
                 let mut new_pattern = l.clone();
                 new_pattern[x % 3] = symbols[i];
-                println!("{:?}", new_pattern);
                 list.push(new_pattern);
             }
         }
     }
-    println!{"{}", list.len()}
     list
 }
 pub fn part_two(input: &str) -> Option<u64> {
     let mut total: u64 = 0;
+    let mut pattern_hash: HashMap<usize, Vec<Vec<&str>>> = HashMap::new();
     for l in input.lines() {
+        println!("line: {:?}", l);
         //parse out the value from the list of value
         let s = l.split(':').collect::<Vec<&str>>();
 
@@ -173,22 +166,26 @@ pub fn part_two(input: &str) -> Option<u64> {
         let target = target_result.unwrap_or(0u64);
 
         let numbers = s[1].trim().split(' ').collect::<Vec<&str>>();
-
-        let patterns = generate_patterns(numbers.len() as u64);
-        for pattern in patterns.iter() {
+        let patterns_opt = pattern_hash.get(&numbers.len());
+        let patterns = match patterns_opt {
+            Some(p) => p,
+            None => &generate_patterns(numbers.len()),
+        };
+        println!("process patterns: {}", patterns.len());
+        for (i,pattern) in patterns.iter().enumerate() {
             let mut to_solve: Vec<_> = numbers
                 .iter()
                 .zip(pattern.iter())
                 .flat_map(|(&x, y)| vec![x, y])
                 .collect();
-
             to_solve.pop();
+
             let result = evaluate(to_solve).unwrap_or(0);
             if result == target {
                 let r = total.checked_add(target);
                 match r {
                     Some(r) => total = r,
-                    None => return None,
+                    None => (),
                 }
                 break;
             }
@@ -246,7 +243,9 @@ mod tests {
     }
     #[test]
     fn test_generate() {
-        let l = generate_patterns(3);
-        println!("{:?}", l);
+        let n = 2;
+        let l = generate_patterns(n);
+        assert_eq!(l.len(), 3_usize.pow(n as u32));
+        println!("{:?} {}", l, l.len());
     }
 }
