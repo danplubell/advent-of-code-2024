@@ -90,9 +90,8 @@ fn find_antinodes(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:
    antinode_set.len()
 }
 
-fn find_antinodes2(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:i64) ->usize {
-    //    println!("{:?}", ant); 
-    let mut antinode_set: HashSet<(i64, i64)> = HashSet::new();
+fn find_antinodes2(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:i64) ->i64 {
+    let mut total = 0_i64;
     ant.iter().for_each(|(k, v)| {
 
         // go through each pair in vector
@@ -102,59 +101,48 @@ fn find_antinodes2(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col
                 if v[i] == (*r, *c) {
                     continue;
                 }
-                loop {
-                    let a1 =
-                        calculate_next_point((*r as i64, *c as i64), (1_i64, 1_i64));
-                    let a2 = calculate_reverse_next_point(
-                        (*r as i64, *c as i64),
-                        (1_i64, 1_i64)
-                    );
-                    let is_valid = is_valid(a1, max_row, max_col); 
-                    if is_valid {
-                        antinode_set.insert(a1);
-                    } else {break}
-
-                }
-                loop {
-                    let a1 =
-                        calculate_next_point((*r as i64, *c as i64), (1_i64, 1_i64));
-                    let a2 = calculate_reverse_next_point(
-                        (*r as i64, *c as i64),
-                        (1_i64, 1_i64)
-                    );
-                    let is_valid = is_valid(a1, max_row, max_col);
-                    if is_valid {
-                        antinode_set.insert(a1);
-                    } else {break}
-
-                }
-                /*
-                let a1 =
-                    calculate_next_point((*r as i64, *c as i64), (v[i].0 as i64, v[i].1 as i64));
-                let a2 = calculate_reverse_next_point(
-                    (*r as i64, *c as i64),
-                    (v[i].0 as i64, v[i].1 as i64),
-                );
-                if is_valid(a1, max_row, max_col) {
-                    antinode_set.insert(a1);
-                }
-                if is_valid(a2, max_row, max_col) {
-                    antinode_set.insert(a2);
-                }
-                
-                 */
+                let r = all_anti_nodes((*r as i64, *c as i64), (v[i].0 as i64, v[i].1 as i64), max_row, max_col);
+                total = r.iter().count() as i64;
             }
         })
     });
-    //    println!("antinodes: {:?}", antinode_set);
-    antinode_set.len()
+    total
 }
 
 fn is_valid(p0: (i64, i64), p1: i64, p2: i64) -> bool {
     matches!((p0.0 >= 0, p0.1 >=0, p0.0 < p1, p0.1 < p2 ), (true, true, true, true))
 }
 
-pub fn part_two(input: &str) -> Option<usize> {
+fn all_anti_nodes(e:(i64, i64), n:(i64, i64), max_row:i64, max_col:i64) -> Vec<(i64, i64)> {
+    let mut nodes:HashSet<(i64,i64)> = HashSet::new();
+    let mut a = e;
+    let mut b = n;
+    loop {
+        let n =  calculate_next_points(a, b);
+        if !is_valid(n, max_row, max_col) {
+            break;
+        }
+        nodes.insert(n);
+        a = b;
+        b = n;
+
+    }
+    loop {
+        let n =  calculate_reverse_next_points(a, b);
+        if !is_valid(n, max_row, max_col) {
+            break;
+        }
+        nodes.insert(n);
+        b = a;
+        a = n;
+    }
+    println!("{:?}", nodes);
+    nodes.into_iter().collect()
+}
+
+
+
+pub fn part_two(input: &str) -> Option<i64> {
     let mut ant: HashMap<char, Vec<(usize, usize)>> = HashMap::new();
     // collection all antennas
     let max_row = input.lines().count();
@@ -197,17 +185,19 @@ mod tests {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
     }
+    
     #[test]
     fn test_next_points() {
+        let mut nodes:HashSet<(i64,i64)> = HashSet::new();
         let mut a = (2_i64,5_i64);
         let mut b = (3_i64, 7_i64);
         let i = 0;
         loop {
             let n =  calculate_next_points(a, b);
-            println!("next {:?}", n);
             if !is_valid(n, 11, 11) {
                 break;
             }
+            nodes.insert(n);
             a = b;
             b = n;
             
@@ -217,8 +207,10 @@ mod tests {
             if !is_valid(n, 11, 11) {
                 break;
             }
+            nodes.insert(n);
             b = a;
             a = n;
         }
+        println!("{:?}", nodes);
     }
 }
