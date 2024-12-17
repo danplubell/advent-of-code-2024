@@ -91,22 +91,24 @@ fn find_antinodes(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:
 }
 
 fn find_antinodes2(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:i64) ->i64 {
-    let mut total = 0_i64;
+    
+    let mut final_set:HashSet<(i64,i64)> = HashSet::new();
     ant.iter().for_each(|(k, v)| {
-
-        // go through each pair in vector
-        v.iter().for_each(|(r, c)| {
-            // match up with all other pairs in vector
-            for i in 0..v.len() {
-                if v[i] == (*r, *c) {
-                    continue;
+        if !v.is_empty() {
+            // go through each pair in vector
+            v.iter().for_each(|(r, c)| {
+                // match up with all other pairs in vector
+                for i in 0..v.len() {
+                    if v[i] == (*r, *c) {
+                        continue;
+                    }
+                    let r = all_anti_nodes((*r as i64, *c as i64), (v[i].0 as i64, v[i].1 as i64), max_row, max_col);
+                    r.iter().for_each(|v| { final_set.insert(*v); });
                 }
-                let r = all_anti_nodes((*r as i64, *c as i64), (v[i].0 as i64, v[i].1 as i64), max_row, max_col);
-                total = r.iter().count() as i64;
-            }
-        })
+            })
+        }
     });
-    total
+    final_set.len() as i64
 }
 
 fn is_valid(p0: (i64, i64), p1: i64, p2: i64) -> bool {
@@ -117,6 +119,9 @@ fn all_anti_nodes(e:(i64, i64), n:(i64, i64), max_row:i64, max_col:i64) -> Vec<(
     let mut nodes:HashSet<(i64,i64)> = HashSet::new();
     let mut a = e;
     let mut b = n;
+    // the current nodes should be in the list of anti nodes
+    nodes.insert(e);
+    nodes.insert(n);
     loop {
         let n =  calculate_next_points(a, b);
         if !is_valid(n, max_row, max_col) {
@@ -136,7 +141,6 @@ fn all_anti_nodes(e:(i64, i64), n:(i64, i64), max_row:i64, max_col:i64) -> Vec<(
         b = a;
         a = n;
     }
-    println!("{:?}", nodes);
     nodes.into_iter().collect()
 }
 
@@ -183,7 +187,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(34));
     }
     
     #[test]
