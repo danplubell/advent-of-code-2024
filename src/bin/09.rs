@@ -3,18 +3,17 @@ advent_of_code::solution!(9);
 pub fn part_one(input: &str) -> Option<u32> {
     //expand input into blocks and files
     let mut buffer: Vec<i64> = Vec::new();
+    let mut fragments: Vec<(i64, i64)> = Vec::new();
     input.lines().for_each(|l| {
         // get pairs of values
         let v: Vec<_> = l
             .chars()
             .collect::<Vec<_>>()
             .chunks(2)
-            .map(|chunk| {
-                match chunk.len() == 2 {
-                    true => (chunk[0], chunk[1]),
-                    false => (chunk[0], 0 as char)
-                }
-                })
+            .map(|chunk| match chunk.len() == 2 {
+                true => (chunk[0], chunk[1]),
+                false => (chunk[0], '0'),
+            })
             .collect::<Vec<_>>();
         for (i, (c1, c2)) in v.iter().enumerate() {
             println!("{i}, {},{}", c1, c2);
@@ -22,11 +21,21 @@ pub fn part_one(input: &str) -> Option<u32> {
             let f_blocks = c1.to_digit(10).unwrap_or(0);
             let s_blocks = c2.to_digit(10).unwrap_or(0);
             (0..f_blocks).for_each(|_e| buffer.push(i as i64));
+
+            // collect fragment
+            let fragment_start = buffer.len();
+            fragments.push((fragment_start as i64, s_blocks as i64));
             (0..s_blocks).for_each(|_s| buffer.push(-1));
         }
     });
+    let reverse_file: Vec<_> = buffer.iter().filter(|n| **n != -1).rev().collect();
     println!("{:?}", buffer);
+    println!("{:?}", fragments);
+    println!("{:?}", reverse_file);
     //defragment
+    fragments.iter().for_each(|(start, blocks)| {
+        
+    })
     None
 }
 
