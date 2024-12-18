@@ -1,5 +1,10 @@
 advent_of_code::solution!(9);
 
+fn check_for_gaps(buffer: &mut Vec<i64>)->bool {
+    let mut gap_flag:bool = true;
+    buffer.iter().for_each(|n| if *n > -1 { gap_flag = true} else { gap_flag = false; });
+    gap_flag
+}
 pub fn part_one(input: &str) -> Option<u32> {
     //expand input into blocks and files
     let mut buffer: Vec<i64> = Vec::new();
@@ -28,14 +33,23 @@ pub fn part_one(input: &str) -> Option<u32> {
             (0..s_blocks).for_each(|_s| buffer.push(-1));
         }
     });
-    let reverse_file: Vec<_> = buffer.iter().filter(|n| **n != -1).rev().collect();
+    let buffer_clone = buffer.clone();
+    let mut reverse_file: Vec<_> = buffer_clone.iter().filter(|n| **n != -1).rev().collect();
     println!("{:?}", buffer);
     println!("{:?}", fragments);
     println!("{:?}", reverse_file);
+    let has_gaps = check_for_gaps(&mut buffer);
+    println!("{:?}", has_gaps);
     //defragment
     fragments.iter().for_each(|(start, blocks)| {
-        
-    })
+        if check_for_gaps(&mut buffer) {
+            // get the number of file blocks to fit the blocks of space
+            let f_blocks: Vec<_> = reverse_file.drain(0..(*blocks as usize)).collect();
+            // graft them into the buffer
+            buffer[0] = 1; here, update
+        }
+    });
+
     None
 }
 
