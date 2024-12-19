@@ -74,11 +74,13 @@ pub fn part_one(input: &str) -> Option<i64> {
     Some(total)
 }
 
-fn find_file(buffer: &Vec<i64>, block_size: i32) {
+fn find_file(buffer: &Vec<i64>, block_size: i32) -> Option<(usize, Vec<i64>)>{
     // start at end and work back 
     let mut in_block = false;
     let mut file:Vec<i64> = vec![];
-    for (i,j) in (0..buffer.len()-1).rev().enumerate() {
+    println!("blen {}",buffer.len() );
+    for (i,j) in (0..buffer.len()).rev().enumerate() {
+        println!("{j} {}", buffer[j]);
         if buffer[j] != -1 {
             in_block = true;
             file.push(buffer[j]);
@@ -87,8 +89,16 @@ fn find_file(buffer: &Vec<i64>, block_size: i32) {
         if buffer[j] == -1 {
             in_block = false;
         }
-        
+        println!("file {} {}", j,file.len());
+        if in_block == false && file.len() == block_size as usize {
+            return Some((j+1,file.clone()));
+        } else {
+            file = vec![];
+            in_block = false;
+            continue;
+        }
     }
+    None
 }
 pub fn part_two(input: &str) -> Option<i64> {
     let mut buffer: Vec<i64> = Vec::new();
@@ -135,10 +145,22 @@ pub fn part_two(input: &str) -> Option<i64> {
                 i+=1;
             }
             if buffer[i] != -1 {
+                // came to end of block
                 if in_block {
                     println!("block? {i} {start_block} {block_size}");
                     // find file that is block size
-                    let file_block: Vec<i64> = find_file(&buffer, block_size);
+                    let result = find_file(&buffer, block_size);
+                    match result {
+                        Some((j,block)) => {
+                            println!("found block: {:?}", block);
+                            here
+                            //inject into buffer
+                            //remove from buffer in other end
+                        }
+                        None => {
+                            // didn't find file that matches 
+                        }
+                    }
                 }
                 in_block = false;
                 block_size = 0;
@@ -225,5 +247,11 @@ mod tests {
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(2858));
+    }
+    #[test]
+    fn test_find_file() {
+        let test_vec: Vec<i64> = vec![0,0,0,-1,-1,-1,2,2,-1,-1,4,4,4,4,-1,-1];
+        let result = find_file(&test_vec, 4);
+        println!("{:?}", result);
     }
 }
