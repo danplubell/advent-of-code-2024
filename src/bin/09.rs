@@ -74,6 +74,22 @@ pub fn part_one(input: &str) -> Option<i64> {
     Some(total)
 }
 
+fn find_file(buffer: &Vec<i64>, block_size: i32) {
+    // start at end and work back 
+    let mut in_block = false;
+    let mut file:Vec<i64> = vec![];
+    for (i,j) in (0..buffer.len()-1).rev().enumerate() {
+        if buffer[j] != -1 {
+            in_block = true;
+            file.push(buffer[j]);
+            continue;
+        }
+        if buffer[j] == -1 {
+            in_block = false;
+        }
+        
+    }
+}
 pub fn part_two(input: &str) -> Option<i64> {
     let mut buffer: Vec<i64> = Vec::new();
 
@@ -121,6 +137,8 @@ pub fn part_two(input: &str) -> Option<i64> {
             if buffer[i] != -1 {
                 if in_block {
                     println!("block? {i} {start_block} {block_size}");
+                    // find file that is block size
+                    let file_block: Vec<i64> = find_file(&buffer, block_size);
                 }
                 in_block = false;
                 block_size = 0;
