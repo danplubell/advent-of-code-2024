@@ -104,23 +104,32 @@ pub fn part_two(input: &str) -> Option<i64> {
         let mut in_block = false;
         let mut block_size = 0;
         let mut start_block = 0;
+        println!("buffer {:?}", buffer);
+
         while i < buffer.len() && i < j {
-            if in_block == false {
-                block_size = 0;
-            }
-            if buffer[i] == -1 {
-                if in_block == false {
-                    start_block = i;
-                }
+            if buffer[i] == -1 && !in_block  {
+                start_block = i;
                 in_block = true;
-                block_size += 1;
-            } else {
+                i+=1;
+                block_size +=1;
+                continue;
+            } 
+            if buffer[i] == -1 && in_block {
+                block_size +=1;
+                i+=1;
+            }
+            if buffer[i] != -1 {
+                if in_block {
+                    println!("block? {i} {start_block} {block_size}");
+                }
                 in_block = false;
+                block_size = 0;
+                i+=1
             }
             // we have a block
-            if in_block == false && block_size > 0 {
+//            if !in_block && block_size > 0 {
                 // find file that fits
-                
+                /*
                 let mut j: usize = buffer.len() - 1;
                 let mut file: Vec<i64> = vec![];
                 let mut end_of_file = 0;
@@ -151,9 +160,10 @@ pub fn part_two(input: &str) -> Option<i64> {
                     }
                     j -= 1;
                 }
-            }
-            start_block = 0;
-            i += 1;
+                */
+         //   }
+//            start_block = 0;
+//            i += 1;
 
             /*if buffer[i] == -1 {
                 //println!("i: {i} {j}");
@@ -171,7 +181,6 @@ pub fn part_two(input: &str) -> Option<i64> {
     });
 
     //get total
-    println!("buffer {:?}", buffer);
     let t: Vec<_> = buffer
         .iter()
         .enumerate()
