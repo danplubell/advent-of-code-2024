@@ -1,16 +1,18 @@
 advent_of_code::solution!(9);
 
-fn check_for_gaps(buffer: &mut Vec<i64>)->bool {
-    let mut gap_flag:bool = true;
+fn check_for_gaps(buffer: &mut Vec<i64>) -> bool {
+    let mut gap_flag: bool = true;
     let mut copy = buffer.clone();
     copy.reverse();
-    copy.iter().for_each(|n|{ gap_flag = *n > -1;});
+    copy.iter().for_each(|n| {
+        gap_flag = *n > -1;
+    });
     gap_flag
 }
 fn take_and_replace(vec: &mut Vec<i64>, needed: usize) -> Vec<i64> {
-    println!("needed {}",needed);
+    println!("needed {}", needed);
     let mut count = 0;
-    let mut j = vec.len()-1;
+    let mut j = vec.len() - 1;
     let mut taken = vec![];
     while j > 0 && count <= needed {
         if vec[j] != -1 {
@@ -22,7 +24,7 @@ fn take_and_replace(vec: &mut Vec<i64>, needed: usize) -> Vec<i64> {
     }
     taken
 }
-pub fn part_one(input: &str)  -> Option<i64> {
+pub fn part_one(input: &str) -> Option<i64> {
     let mut buffer: Vec<i64> = Vec::new();
 
     input.lines().for_each(|l| {
@@ -45,36 +47,31 @@ pub fn part_one(input: &str)  -> Option<i64> {
             // collect fragment
             (0..s_blocks).for_each(|_s| buffer.push(-1));
         }
-//        println!("{:?}", buffer);
+        //        println!("{:?}", buffer);
         // defragment
-        let mut i:usize = 0;
-        let mut j: usize = buffer.len() -1;
+        let mut i: usize = 0;
+        let mut j: usize = buffer.len() - 1;
         while i < buffer.len() && i < j {
             if buffer[i] == -1 {
                 //println!("i: {i} {j}");
                 while buffer[j] == -1 {
-                    j-=1;
-                };
+                    j -= 1;
+                }
                 //println!("j: {i} {j} {} {}", buffer[i], buffer[j]);
                 buffer[i] = buffer[j];
                 buffer[j] = -1;
-                
             }
-            i+=1;
+            i += 1;
         }
     });
-//    println!("buffer {:?}", buffer);
-    let t: Vec<_> = buffer.iter().enumerate().map(|(i,n)|{
-        if *n > -1_i64 {
-            i as i64 *n
-        } else {
-            0
-        }
-    }).collect();
-    let total = t.iter().fold(0_i64,|acc,x| acc + x);
+    //    println!("buffer {:?}", buffer);
+    let t: Vec<_> = buffer
+        .iter()
+        .enumerate()
+        .map(|(i, n)| if *n > -1_i64 { i as i64 * n } else { 0 })
+        .collect();
+    let total = t.iter().fold(0_i64, |acc, x| acc + x);
     Some(total)
-    
-    
 }
 
 pub fn part_two(input: &str) -> Option<i64> {
@@ -102,8 +99,8 @@ pub fn part_two(input: &str) -> Option<i64> {
         }
         //        println!("{:?}", buffer);
 
-        let mut i:usize = 0;
-        let mut j: usize = buffer.len() -1;
+        let mut i: usize = 0;
+        let mut j: usize = buffer.len() - 1;
         let mut in_block = false;
         let mut block_size = 0;
         let mut start_block = 0;
@@ -116,49 +113,47 @@ pub fn part_two(input: &str) -> Option<i64> {
                     start_block = i;
                 }
                 in_block = true;
-                block_size +=1;
-            }else {
+                block_size += 1;
+            } else {
                 in_block = false;
             }
-            if in_block == false  && block_size > 0 {
+            // we have a block
+            if in_block == false && block_size > 0 {
                 // find file that fits
-                let mut j: usize = buffer.len() -1;
-                let mut file:Vec<i64> = vec![];
+                
+                let mut j: usize = buffer.len() - 1;
+                let mut file: Vec<i64> = vec![];
                 let mut end_of_file = 0;
                 let mut in_file = false;
-                while j < i && j > 0{
+                while j < i && j > 0 {
                     if buffer[j] != -1 {
                         in_file = true;
                         file.push(buffer[j]);
-                    } else {
-                        if in_file == true {
-                            end_of_file = j + 1;
-                            in_file = false;
-                            if file.len() == block_size {
-                                // move file
-                                for (k,z) in (start_block..(start_block + block_size)).enumerate() {
-                                    buffer[z] = file[k];
-                                }
-                                // reset file
-                                for z in (end_of_file..(end_of_file + block_size)){
-                                    buffer[z] = -1;
-                                }
-                                break;
-                            } else {
-                                file = vec![];
-                                end_of_file = 0;
-                                in_file = false;
-                                continue;
-
+                    } else if in_file == true {
+                        end_of_file = j + 1;
+                        in_file = false;
+                        if file.len() == block_size {
+                            // move file
+                            for (k, z) in (start_block..(start_block + block_size)).enumerate() {
+                                buffer[z] = file[k];
                             }
+                            // reset file
+                            for z in (end_of_file..(end_of_file + block_size)) {
+                                buffer[z] = -1;
+                            }
+                            break;
+                        } else {
+                            file = vec![];
+                            end_of_file = 0;
+                            in_file = false;
+                            continue;
                         }
                     }
-                    j-=1;
+                    j -= 1;
                 }
-                
             }
             start_block = 0;
-            i+=1;
+            i += 1;
 
             /*if buffer[i] == -1 {
                 //println!("i: {i} {j}");
@@ -170,23 +165,21 @@ pub fn part_two(input: &str) -> Option<i64> {
                 buffer[j] = -1;
 
             }
-            
+
              */
         }
     });
-    
-    //get total
-    //    println!("buffer {:?}", buffer);
-    let t: Vec<_> = buffer.iter().enumerate().map(|(i,n)|{
-        if *n > -1_i64 {
-            i as i64 *n
-        } else {
-            0
-        }
-    }).collect();
-    let total = t.iter().fold(0_i64,|acc,x| acc + x);
-    Some(total)
 
+    //get total
+    println!("buffer {:?}", buffer);
+    let t: Vec<_> = buffer
+        .iter()
+        .enumerate()
+        .map(|(i, n)| if *n > -1_i64 { i as i64 * n } else { 0 })
+        .collect();
+    let total = t.iter().fold(0_i64, |acc, x| acc + x);
+    println!("total: {total}");
+    // Some(total)
 
     None
 }
@@ -207,4 +200,3 @@ mod tests {
         assert_eq!(result, Some(2858));
     }
 }
-
