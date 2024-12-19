@@ -7,20 +7,24 @@ fn check_for_gaps(buffer: &mut Vec<i64>)->bool {
     copy.iter().for_each(|n|{ gap_flag = *n > -1;});
     gap_flag
 }
-fn take_and_replace(vec: &mut Vec<i64>, start: usize, n: usize) -> Vec<i64> {
-    if start >= vec.len() {
-        return Vec::new();
+fn take_and_replace(vec: &mut Vec<i64>, needed: usize) -> Vec<i64> {
+    println!("needed {}",needed);
+    let mut count = 0;
+    let mut j = vec.len()-1;
+    let mut taken = vec![];
+    while j > 0 && count <= needed {
+        if vec[j] != -1 {
+            taken.push(vec[j]);
+            count += 1;
+            vec[j] = -1;
+        }
+        j -= 1;
     }
-
-    let end = (start + n).min(vec.len());
-    let taken = vec.splice(start..end, vec![0; end - start]).collect();
-    // Fill the newly inserted elements with -1
-    vec[start..end].fill(-1);
     taken
-}pub fn part_one(input: &str) -> Option<u32> {
-    //expand input into blocks and files
+}
+pub fn part_one(input: &str)  -> Option<i64> {
     let mut buffer: Vec<i64> = Vec::new();
-    let mut fragments: Vec<(i64, i64)> = Vec::new();
+
     input.lines().for_each(|l| {
         // get pairs of values
         let v: Vec<_> = l
@@ -33,43 +37,44 @@ fn take_and_replace(vec: &mut Vec<i64>, start: usize, n: usize) -> Vec<i64> {
             })
             .collect::<Vec<_>>();
         for (i, (c1, c2)) in v.iter().enumerate() {
-            println!("{i}, {},{}", c1, c2);
             // for each pair expand into the buffer
             let f_blocks = c1.to_digit(10).unwrap_or(0);
             let s_blocks = c2.to_digit(10).unwrap_or(0);
             (0..f_blocks).for_each(|_e| buffer.push(i as i64));
 
             // collect fragment
-            let fragment_start = buffer.len();
-            fragments.push((fragment_start as i64, s_blocks as i64));
             (0..s_blocks).for_each(|_s| buffer.push(-1));
         }
-    });
- //   let buffer_clone = buffer.clone();
-//    let mut reverse_file: Vec<_> = buffer_clone.iter().filter(|n| **n != -1).rev().collect();
-    println!("{:?}", buffer);
-    println!("{:?}", fragments);
-//    println!("{:?}", reverse_file);
-    let has_gaps = check_for_gaps(&mut buffer);
-    println!("{:?}", has_gaps);
-    //defragment
-    let mut next_start:usize = buffer.len();
-    fragments.iter().for_each(|(start, blocks)| {
-        if check_for_gaps(&mut buffer) {
-            next_start -= (*blocks as usize);
-            // get the number of file blocks to fit the blocks of space
-            let mut f_blocks: Vec<_> = take_and_replace(&mut buffer, next_start, *blocks as usize);
-            f_blocks.reverse();
-            // graft them into the buffer
-            for (i,b_pos) in ((*start as usize)..(*start as usize + f_blocks.len())).enumerate() {
-                buffer[b_pos] = f_blocks[i];
+//        println!("{:?}", buffer);
+
+        let mut i:usize = 0;
+        let mut j: usize = buffer.len() -1;
+        while i < buffer.len() && i < j {
+            if buffer[i] == -1 {
+                //println!("i: {i} {j}");
+                while buffer[j] == -1 {
+                    j-=1;
+                };
+                //println!("j: {i} {j} {} {}", buffer[i], buffer[j]);
+                buffer[i] = buffer[j];
+                buffer[j] = -1;
+                
             }
-            let testit: Vec<_> = buffer.iter().map(|c|  if(*c == -1) {".".into()} else {c.to_string()}).collect();
-            println!("next: {:?}",testit );
+            i+=1;
         }
     });
-    println!("finalbuffer {:?}", buffer);
-    None
+//    println!("buffer {:?}", buffer);
+    let t: Vec<_> = buffer.iter().enumerate().map(|(i,n)|{
+        if *n > -1_i64 {
+            i as i64 *n
+        } else {
+            0
+        }
+    }).collect();
+    let total = t.iter().fold(0_i64,|acc,x| acc + x);
+    Some(total)
+    
+    
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
@@ -83,7 +88,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-      //  assert_eq!(result, Some(1928));
+        assert_eq!(result, Some(1928));
     }
 
     #[test]
