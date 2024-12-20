@@ -153,7 +153,8 @@ pub fn part_two(input: &str) -> Option<i64> {
                     match result {
                         Some((j,block)) => {
                             println!("found block: {:?}", block);
-                            here
+                            replace_block(&mut buffer, start_block, block);
+                            replace_block_repeat(&mut buffer, j, block_size as usize, -1);
                             //inject into buffer
                             //remove from buffer in other end
                         }
@@ -228,9 +229,21 @@ pub fn part_two(input: &str) -> Option<i64> {
         .collect();
     let total = t.iter().fold(0_i64, |acc, x| acc + x);
     println!("total: {total}");
-    // Some(total)
+    println!("buffer {:?}", buffer);
+    Some(total)
 
-    None
+}
+
+fn replace_block_repeat(buffer: &mut [i64], p1: usize,block_size: usize, replace_with: i64) {
+    let start = p1;
+    let end = p1 + block_size;
+    (start..end).for_each(|n|buffer[n] = replace_with);
+}
+
+fn replace_block(buffer: &mut [i64], block_size: usize, replace_with: Vec<i64>) {
+    replace_with.iter().enumerate().for_each(|(i,n)| {
+        buffer[block_size + i] = *n;
+    })
 }
 
 #[cfg(test)]
@@ -253,5 +266,19 @@ mod tests {
         let test_vec: Vec<i64> = vec![0,0,0,-1,-1,-1,2,2,-1,-1,4,4,4,4,-1,-1];
         let result = find_file(&test_vec, 4);
         println!("{:?}", result);
+    }
+    
+    #[test]
+    fn test_replace_block() {
+        let mut test_vec: Vec<i64> = vec![0,0,0,-1,-1,-1,2,2,-1,-1,4,4,4,4,-1,-1];
+        let replacement = vec![3,3];
+        replace_block(&mut test_vec, 6, replacement);
+        println!("{:?}", test_vec);
+    }
+    #[test]
+    fn test_replace_block_repeat() {
+        let mut test_vec: Vec<i64> = vec![0,0,0,-1,-1,-1,2,2,-1,-1,4,4,4,4,-1,-1];
+        replace_block_repeat(&mut test_vec, 6, 2, -1);
+        println!("{:?}", test_vec);
     }
 }
