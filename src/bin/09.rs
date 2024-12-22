@@ -10,7 +10,6 @@ fn check_for_gaps(buffer: &mut Vec<i64>) -> bool {
     gap_flag
 }
 fn take_and_replace(vec: &mut Vec<i64>, needed: usize) -> Vec<i64> {
-    println!("needed {}", needed);
     let mut count = 0;
     let mut j = vec.len() - 1;
     let mut taken = vec![];
@@ -118,7 +117,6 @@ fn build_buffer(input: &str) -> Vec<i64> {
             // collect fragment
             (0..s_blocks).for_each(|_s| buffer.push(-1));
         }
-        println!("{:?}", buffer);
     });
     buffer
 }
@@ -129,37 +127,33 @@ fn find_file(buffer: &Vec<i64>, block_size: i32) -> Option<(usize, Vec<i64>)> {
         .into_iter()
         .filter(|(i, g)| g[0] != -1);
     let found = groups.find(|(i, g)| g.len() <= block_size as usize);
-    println!("found {} {:?}", block_size, found);
     found
 }
 pub fn part_two(input: &str) -> Option<i64> {
     let mut buffer: Vec<i64> = build_buffer(input);
-    println!("buffer: {:?}", buffer);
     let groups = group_identical_with_index(&buffer);
     let mut files: Vec<_> = groups.iter().filter(|(i, g)| g[0] != -1).collect();
-    println!("{:?}", files);
     files.reverse();
     files.iter().for_each(|(i, f)| {
         // go through each file and try to move it
         let new_groups = group_identical_with_index(&buffer);
         let mut gap_list: Vec<_> = new_groups.iter().filter(|(i, g)| g[0] == -1).collect();
-        println!("gap_list: {:?}", gap_list);
-        println!("file: {:?}", f);
         let result = gap_list.iter().find(|(i, g)| g.len() >= f.len());
-        println!("file_result: {:?} {:?} {:?}",i, f, result);
         if let Some((j, v)) = result {
             if i > j {
                 // replace the gap with the block
                 replace_block(&mut buffer, *j, f);
-                println!("after replace{:?}", buffer);
-                println!("{}", i);
                 replace_block_repeat(&mut buffer, *i, f.len(), -1);
-                println! {"after repeat: {:?}", buffer};
             }
         }
     });
-    println!("final: {:?}", buffer);
-    None
+    let t: Vec<_> = buffer
+        .iter()
+        .enumerate()
+        .map(|(i, n)| if *n > -1_i64 { i as i64 * n } else { 0 })
+        .collect();
+    let total = t.iter().fold(0_i64, |acc, x| acc + x);
+    Some(total)
 
     /*
     input.lines().for_each(|l| {
@@ -239,7 +233,6 @@ pub fn part_two2(input: &str) -> Option<i64> {
             // collect fragment
             (0..s_blocks).for_each(|_s| buffer.push(-1));
         }
-        println!("{:?}", buffer);
 
         let mut i: usize = 0;
         let mut j: usize = buffer.len() - 1;
@@ -263,12 +256,10 @@ pub fn part_two2(input: &str) -> Option<i64> {
             if buffer[i] != -1 {
                 // came to end of block
                 if in_block {
-                    println!("block? {i} {start_block} {block_size}");
                     // find file that is block size
                     let result = find_file(&buffer, block_size);
                     match result {
                         Some((j, block)) => {
-                            println!("found block: {:?}", block);
                             replace_block(&mut buffer, start_block, &block);
                             let replace_at = buffer.len() - j - block.len();
                             replace_block_repeat(&mut buffer, j, block_size as usize, -1);
@@ -345,8 +336,6 @@ pub fn part_two2(input: &str) -> Option<i64> {
         .map(|(i, n)| if *n > -1_i64 { i as i64 * n } else { 0 })
         .collect();
     let total = t.iter().fold(0_i64, |acc, x| acc + x);
-    println!("total: {total}");
-    println!("buffer {:?}", buffer);
     Some(total)
 }
 
