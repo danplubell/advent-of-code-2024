@@ -143,22 +143,19 @@ pub fn part_two(input: &str) -> Option<i64> {
         // go through each file and try to move it
         let new_groups = group_identical_with_index(&buffer);
         let mut gap_list: Vec<_> = new_groups.iter().filter(|(i, g)| g[0] == -1).collect();
-        let result = gap_list.iter().find(|(i, g)| g.len() >= f.len());
         println!("gap_list: {:?}", gap_list);
-        println!("file: {:?} {:?}", f, result);
+        println!("file: {:?}", f);
+        let result = gap_list.iter().find(|(i, g)| g.len() >= f.len());
+        println!("file_result: {:?} {:?} {:?}",i, f, result);
         if let Some((j, v)) = result {
-            // replace the gap with the block
-            replace_block(&mut buffer, *j, f);
-            let start_at = i;
-            println! {"{} {} {:?}", start_at, f.len(), buffer};
-
-            replace_block_repeat(&mut buffer, *start_at, f.len(), -1);
-            println! {"{} {} {:?}", start_at, f.len(), buffer};
-            if let Some(gap_position) = gap_list.iter().position(|(i, g)| i == j) {
-                gap_list.remove(gap_position);
+            if i > j {
+                // replace the gap with the block
+                replace_block(&mut buffer, *j, f);
+                println!("after replace{:?}", buffer);
+                println!("{}", i);
+                replace_block_repeat(&mut buffer, *i, f.len(), -1);
+                println! {"after repeat: {:?}", buffer};
             }
-            let new_groups = group_identical_with_index(&buffer.clone());
-            gap_list = new_groups.iter().filter(|(i, g)| g[0] == -1).collect();
         }
     });
     println!("final: {:?}", buffer);
