@@ -31,6 +31,20 @@ fn next_step(input: &str, d: u32, row: usize, col: usize, destinations: &mut Has
         })
     }
 }
+fn next_step2(input: &str, d: u32, row: usize, col: usize, destinations: &mut Vec<(usize, usize)>)  {
+    if d == 9 {
+        destinations.push((row, col));
+        return;
+    };
+    let directions: Vec<Direction> = check_directions(d, input, row, col);
+    if !directions.is_empty() {
+        directions.iter().for_each(|dir| {
+            let next_r_c = next_row_col(dir, row, col);
+            crate::next_step2(input, d + 1, next_r_c.0, next_r_c.1, destinations);
+        })
+    }
+}
+
 pub fn part_one(input: &str) -> Option<usize> {
     let mut total = 0;
     input.lines().enumerate().for_each(|(row, l)| {
@@ -105,8 +119,20 @@ fn check_directions(value: u32, input: &str, row: usize, col: usize) -> Vec<Dire
     directions
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let mut total = 0;
+    input.lines().enumerate().for_each(|(row, l)| {
+        l.chars().enumerate().for_each(|(col, ch)| {
+            let d = ch.to_digit(10).unwrap();
+            if d == 0 {
+                let mut destinations:Vec<(usize,usize)> = Vec::new();
+                next_step2(input, d, row, col, &mut destinations);
+                total += destinations.len();
+            }
+        })
+    });
+    Some(total)
+
 }
 
 #[cfg(test)]
@@ -122,6 +148,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(81));
     }
 }
