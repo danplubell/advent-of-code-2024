@@ -18,30 +18,28 @@ fn next_row_col(d: &Direction, row: usize, col: usize) -> (usize, usize) {
         Direction::West => (row, col - 1),
     }
 }
-fn next_step(input: &str, d: u32, row: usize, col: usize, total: u32) -> u32 {
-    println!("next step: {d} {row} {col}");
-    let mut new_total = total;
+fn next_step(input: &str, d: u32, row: usize, col: usize, destinations: &mut HashSet<(usize, usize)>)  {
     if d == 9 {
-        new_total += 1;
-        return new_total;
+        destinations.insert((row, col));
+        return;
     };
     let directions: Vec<Direction> = check_directions(d, input, row, col);
     if !directions.is_empty() {
         directions.iter().for_each(|dir| {
             let next_r_c = next_row_col(dir, row, col);
-            new_total = next_step(input, d + 1, next_r_c.0, next_r_c.1, new_total);
+            next_step(input, d + 1, next_r_c.0, next_r_c.1, destinations);
         })
     }
-    new_total
 }
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<usize> {
     let mut total = 0;
     input.lines().enumerate().for_each(|(row, l)| {
         l.chars().enumerate().for_each(|(col, ch)| {
             let d = ch.to_digit(10).unwrap();
             if d == 0 {
-                let destinations:HashSet<(usize,usize)> = HashSet::new();
-                total = next_step(input, d, row, col, total);
+                let mut destinations:HashSet<(usize,usize)> = HashSet::new();
+                next_step(input, d, row, col, &mut destinations);
+                total += destinations.len();
             }
         })
     });
