@@ -52,70 +52,151 @@ pub fn part_one(input: &str) -> Option<usize> {
     });
     Some(stone_list.len())
 }
-// in third.rs
-#[derive(Debug, Clone)]
-pub struct List<T> {
+use std::fmt::Display;
+
+type Link<T> = Option<Box<Node<T>>>;
+
+#[derive(Debug)]
+struct Node<T> {
+    value: T,
+    next: Link<T>,
+}
+
+impl<T> Node<T> {
+    fn new(value: T) -> Self {
+        Node { value, next: None }
+    }
+    fn add_next(&mut self, link: &Link<i64>) {
+        self.next = link;
+    }
+}
+
+#[derive(Debug)]
+struct LinkedList<T> {
     head: Link<T>,
 }
-impl<T> List<T> {
-    pub fn new() -> Self {
-        List { head: None }
-    }
-    pub fn prepend(&self, elem: T) -> List<T> {
 
-        List { head: Some(Rc::new(Node {
-            elem: elem,
-            next: self.head.clone(),
-        }))}
+impl<T: Display> LinkedList<T> {
+    fn new() -> Self {
+        LinkedList { head: None }
     }
-    pub fn tail(&self) -> List<T> {
-        List { head: self.head.as_ref().and_then(|node| node.next.clone()) }
-    }
-    pub fn head(&self) -> Option<&T> {
-        self.head.as_ref().map(|node| &node.elem)
-    }
-    pub fn append(&mut self, elem: T) {
+
+    fn append(&mut self, value: T) {
+        let new_node = Box::new(Node::new(value));
         let mut current = &mut self.head;
         while let Some(node) = current {
             current = &mut node.next;
         }
+        *current = Some(new_node);
+    }
+
+    fn insert(&mut self, value: T, index: usize) {
+        if index == 0 {
+            let mut new_node = Box::new(Node::new(value));
+            new_node.next = self.head.take();
+            self.head = Some(new_node);
+        } else {
+            let mut current = &mut self.head;
+            let mut count = 0;
+            while let Some(node) = current {
+                if count == index - 1 {
+                    let mut new_node = Box::new(Node::new(value));
+                    new_node.next = node.next.take();
+                    node.next = Some(new_node);
+                    return;
+                }
+                current = &mut node.next;
+                count += 1;
+            }
+            panic!("Index out of bounds");
+        }
+    }
+    fn update(&mut self, index: usize, new_value: T) {
+        if index == 0 {
+            if let Some(node) = &mut self.head {
+                node.value = new_value;
+            } else {
+                panic!("Index out of bounds");
+            }
+        } else {
+            let mut current = &mut self.head;
+            let mut count = 0;
+            while let Some(node) = current {
+                if count == index {
+                    node.value = new_value;
+                    return;
+                }
+                current = &mut node.next;
+                count += 1;
+            }
+            panic!("Index out of bounds");
+        }
+    }
+    fn count(&mut self) -> usize {
+        let mut count:usize = 0;
+        let mut current = &mut self.head;
+
+        while let Some(node) = current {
+            current = &mut node.next;
+            count += 1;
+        }
+        count
+    }
+    fn print_list(&self) {
+        let mut current = &self.head;
+        while let Some(node) = current {
+            print!("{} ", node.value);
+            current = &node.next;
+        }
+        println!();
     }
 }
 
-type Link<T> = Option<Rc<Node<T>>>;
-
-#[derive(Debug, PartialEq, Clone)]
-struct Node<T> {
-    elem: T,
-    next: Link<T>,
-}
-impl<T> Node<T> {
-    fn next(&self) -> &Link<T>{
-        &self.next
-    }
-}
 pub fn part_two(input: &str) -> Option<usize> {
-/*
     let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
-    let base_node = Node {
-        data: None,
-        next: None
-    };
-    let mut current_node = base_node;
+    let mut linked_list = LinkedList::new();
     list.iter().for_each(|n_str|{
         let n = n_str.parse::<i64>().unwrap();
-        current_node.data = Some(n);
-        let  next_node = Node {
-            data: None,
-            next: None,
-        };
-        let next_node_rc = Rc::new(RefCell::new(next_node));
-        current_node.next = Some(next_node_rc);
-        current_node = next_node;
+        linked_list.append(n);
     });
-
- */
-    None
+    
+    (0..1).for_each(|n|{
+        let mut current = &mut linked_list.head;
+        while let Some(node) = current {
+            println!("node: {:?}", node);
+            let stone_type: StoneType;
+            let n = node.value;
+            if n == 0 {
+                stone_type = StoneType::IsZero;
+            } else if is_even_digits(n) {
+                stone_type = StoneType::IsEvenDigits;
+            } else {
+                stone_type = StoneType::Multiply;
+            }
+            match stone_type {
+                StoneType::IsZero => {
+                   node.value = 1;
+                }
+                StoneType::IsEvenDigits => {
+                    let result = split_stone(n);;
+                    node.value = result.0;
+                    let next_node = &node.next;
+                    let mut new_node = Box::new(Node::new(result.1));
+                    new_node.add_next(next_node);
+                    node.next = Some(new_node);
+                }
+                StoneType::Multiply => {
+                    node.value = n * 2024;
+                }
+            }
+            current = &mut node.next;
+            println!("current: {:?}", current);
+        }
+    });
+//    linked_list.print_list();
+    println!("list: {:?}", linked_list);
+    let count = linked_list.count();
+    Some(count)
 /*    let stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
     let mut stone_list: Vec<i64> = stones.clone();
     let mut working_list: Vec<i64> = vec![];
@@ -170,28 +251,13 @@ mod tests {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
     }
-    use super::List;
 
     #[test]
     fn basics() {
-        let list = List::new();
-        assert_eq!(list.head(), None);
-
-        let list = list.prepend(1).prepend(2).prepend(3);
-        assert_eq!(list.head(), Some(&3));
-
-        let list = list.tail();
-        assert_eq!(list.head(), Some(&2));
-
-        let list = list.tail();
-        assert_eq!(list.head(), Some(&1));
-
-        let list = list.tail();
-        assert_eq!(list.head(), None);
-
-        // Make sure empty tail works
-        let list = list.tail();
-        assert_eq!(list.head(), None);
-
+        let mut list = LinkedList::new();
+        list.append(1);
+        list.append(2);
+        list.append(3);
+        list.print_list();
     }
 }
