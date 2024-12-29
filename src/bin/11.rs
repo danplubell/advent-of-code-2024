@@ -1,3 +1,4 @@
+use std::ops::DerefMut;
 use std::rc::Rc;
 
 advent_of_code::solution!(11);
@@ -52,7 +53,7 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(stone_list.len())
 }
 // in third.rs
-
+#[derive(Debug, Clone)]
 pub struct List<T> {
     head: Link<T>,
 }
@@ -61,12 +62,11 @@ impl<T> List<T> {
         List { head: None }
     }
     pub fn prepend(&self, elem: T) -> List<T> {
-        let new_node = Some(Rc::new(Node {
+
+        List { head: Some(Rc::new(Node {
             elem: elem,
             next: self.head.clone(),
-            prev: None,
-        }));
-        let h = self.head_node().unwrap();
+        }))}
     }
     pub fn tail(&self) -> List<T> {
         List { head: self.head.as_ref().and_then(|node| node.next.clone()) }
@@ -74,17 +74,25 @@ impl<T> List<T> {
     pub fn head(&self) -> Option<&T> {
         self.head.as_ref().map(|node| &node.elem)
     }
-    pub fn head_node(&self)-> Link<T> {
-        self.head.clone()
+    pub fn append(&mut self, elem: T) {
+        let mut current = &mut self.head;
+        while let Some(node) = current {
+            current = &mut node.next;
+        }
     }
 }
 
 type Link<T> = Option<Rc<Node<T>>>;
 
+#[derive(Debug, PartialEq, Clone)]
 struct Node<T> {
     elem: T,
     next: Link<T>,
-    prev: Link<T>,
+}
+impl<T> Node<T> {
+    fn next(&self) -> &Link<T>{
+        &self.next
+    }
 }
 pub fn part_two(input: &str) -> Option<usize> {
 /*
@@ -105,7 +113,7 @@ pub fn part_two(input: &str) -> Option<usize> {
         current_node.next = Some(next_node_rc);
         current_node = next_node;
     });
-    
+
  */
     None
 /*    let stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
