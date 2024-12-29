@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-use std::ops::Deref;
 use std::rc::Rc;
-use rayon::iter::split;
 
 advent_of_code::solution!(11);
 
@@ -25,7 +22,7 @@ pub fn part_one(input: &str) -> Option<usize> {
     let mut stone_list: Vec<i64> = stones.clone();
     let mut working_list: Vec<i64> = vec![];
     (0..25).for_each(|i| {
-        
+
         stone_list.iter().for_each(|n| {
             let stone_type: StoneType;
             if *n == 0 {
@@ -54,23 +51,38 @@ pub fn part_one(input: &str) -> Option<usize> {
     });
     Some(stone_list.len())
 }
+// in third.rs
 
-struct Node {
-    data: Option<i64>,
-    next: Option<Rc<RefCell<Node>>>,
+pub struct List<T> {
+    head: Link<T>,
 }
-impl Node {
-    fn add_next(&mut self, data: i64) -> Option<> {
-        let next_node = Node {
-            data: Some(data),
-            next: None,
-        };
-        self.next = Some(Rc::new(RefCell::new(next_node)));
-        self.next.clone()
+impl<T> List<T> {
+    pub fn new() -> Self {
+        List { head: None }
     }
+    pub fn prepend(&self, elem: T) -> List<T> {
+        List { head: Some(Rc::new(Node {
+            elem: elem,
+            next: self.head.clone(),
+        }))}
+    }
+    pub fn tail(&self) -> List<T> {
+        List { head: self.head.as_ref().and_then(|node| node.next.clone()) }
+    }
+    pub fn head(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| &node.elem)
+    }
+
+}
+
+type Link<T> = Option<Rc<Node<T>>>;
+
+struct Node<T> {
+    elem: T,
+    next: Link<T>,
 }
 pub fn part_two(input: &str) -> Option<usize> {
-    
+/*
     let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
     let base_node = Node {
         data: None,
@@ -88,6 +100,8 @@ pub fn part_two(input: &str) -> Option<usize> {
         current_node.next = Some(next_node_rc);
         current_node = next_node;
     });
+    
+ */
     None
 /*    let stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
     let mut stone_list: Vec<i64> = stones.clone();
@@ -124,7 +138,7 @@ pub fn part_two(input: &str) -> Option<usize> {
         working_list = vec![];
     });
     Some(stone_list.len())
-    
+
  */
 }
 
@@ -142,5 +156,29 @@ mod tests {
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
+    }
+    use super::List;
+
+    #[test]
+    fn basics() {
+        let list = List::new();
+        assert_eq!(list.head(), None);
+
+        let list = list.prepend(1).prepend(2).prepend(3);
+        assert_eq!(list.head(), Some(&3));
+
+        let list = list.tail();
+        assert_eq!(list.head(), Some(&2));
+
+        let list = list.tail();
+        assert_eq!(list.head(), Some(&1));
+
+        let list = list.tail();
+        assert_eq!(list.head(), None);
+
+        // Make sure empty tail works
+        let list = list.tail();
+        assert_eq!(list.head(), None);
+
     }
 }
