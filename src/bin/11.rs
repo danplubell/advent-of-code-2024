@@ -272,7 +272,8 @@ pub fn part_two(input: &str) -> Option<usize> {
         while let Some(node) = current {
             println!("node: {:?}", node);
             let stone_type: StoneType;
-            let n = node.as_ref().borrow().get_elem();
+            let mut node_borrow = node.as_ref().borrow_mut();
+            let n = node_borrow.get_elem();
             if *n == 0 {
                 stone_type = StoneType::IsZero;
             } else if is_even_digits(*n) {
@@ -282,20 +283,20 @@ pub fn part_two(input: &str) -> Option<usize> {
             }
             match stone_type {
                 StoneType::IsZero => {
-                   node.as_ref().borrow().set_elem(1);
+                   node.as_ref().borrow_mut().set_elem(1);
                 }
                 StoneType::IsEvenDigits => {
                     let result = split_stone(*n);
                     node.as_ref().borrow_mut().set_elem(result.0);
                     let mut new_node = Rc::new(RefCell::new(Node::new(result.1)));
-                    new_node.next = node.as_ref().borrow().next.clone();
-                    node.as_ref().borrow().set_next(Some(new_node));
+                    new_node.borrow_mut().set_next(node.as_ref().borrow().next.clone());
+                    node.as_ref().borrow_mut().set_next(Some(new_node));
                 }
                 StoneType::Multiply => {
-                    node.elem = n * 2024;
+                    node.as_ref().borrow_mut().set_elem( n * 2024);
                 }
             }
-            current = &mut node.next;
+            current = node.get_nex;
             println!("current: {:?}", current);
         }
     });
