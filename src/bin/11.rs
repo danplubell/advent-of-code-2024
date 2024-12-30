@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::ops::DerefMut;
 use std::rc::Rc;
 
@@ -54,6 +55,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 use std::fmt::Display;
 
+/*
 type Link<T> = Option<Box<Node<T>>>;
 
 #[derive(Debug)]
@@ -65,9 +67,6 @@ struct Node<T> {
 impl<T> Node<T> {
     fn new(value: T) -> Self {
         Node { value, next: None }
-    }
-    fn add_next(&mut self, link: &Link<i64>) {
-        self.next = link;
     }
 }
 
@@ -152,9 +151,117 @@ impl<T: Display> LinkedList<T> {
     }
 }
 
+ */
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct List<T> {
+    head: Link<T>,
+}
+
+type Link<T> = Option<Rc<RefCell<Node<T>>>>;
+
+#[derive(Debug, PartialEq, Clone)]
+struct Node<T> {
+    elem: T,
+    next: Link<T>,
+}
+impl<T> Node<T>{
+    fn new(value:T) -> Self {
+        Self {
+            elem: value,
+            next: None,
+        }
+    }
+    fn set_elem(&mut self, elem: T) {
+        self.elem = elem;
+    }
+    fn get_elem(&mut self) -> &T {
+        &self.elem
+    }
+    fn get_next(&mut self) -> Link<T>{
+        self.next.clone()
+    }
+    fn set_next(&mut self, new_next: Link<T>) {
+        self.next = new_next;
+    }
+}
+
+impl<T> List<T> {
+    pub fn append(&mut self, elem: T) {
+        let new_node = Rc::new(RefCell::new(Node::new(elem)));
+        match self.head.as_ref() {
+            None => {
+                // If the list is empty, set the head to the new node
+                self.head = Some(new_node);
+            }
+            Some(_) => {
+                // Traverse to the end of the list and append the new node
+                let mut current = self.head.clone();
+                while let Some(node) = current {
+                    let mut node_ref = node.borrow_mut(); // Borrow mutably
+                    if node_ref.next.is_none() {
+                        node_ref.next = Some(new_node); // Set the next node
+                        break;
+                    }
+                    current = node_ref.next.clone(); // Move to the next node
+                }
+            }
+        }
+    }
+    pub fn new() -> Self {
+        List { head: None }
+    }
+
+    pub fn prepend(&self, elem: T) -> List<T> {
+        List { head: Some(Rc::new(RefCell::new(Node {
+            elem: elem,
+            next: self.head.clone(),
+        })))}
+    }
+
+    pub fn tail(&self) -> List<T> {
+        List { head: self.head.as_ref().and_then(|node| {let node_ref = node.borrow(); node_ref.next.clone()}) }
+    }
+    pub fn head(&self) -> Option<T>
+    where
+        T: Clone
+    {
+        self.head.as_ref().map(|node| {
+            let node_ref = node.borrow();
+            node_ref.elem.clone()
+        })
+    }
+    /*
+    pub fn append(&mut self, elem: T) {
+        let new_node = Rc::new(RefCell::new(Node {
+            elem,
+            next: None,
+        }));
+
+        match &self.head {
+            None => self.head = Some(new_node),
+            Some(head) => {
+                let mut current = Rc::clone(head);
+                loop {
+                    let mut current_ref = current.borrow_mut();
+                    if current_ref.next.is_none() {
+                        current_ref.next = Some(new_node);
+                        break;
+                    }
+                    let next = Rc::clone(current_ref.next.as_ref().unwrap());
+                    drop(current_ref);
+                    current = next;
+                }
+            }
+        }
+    }
+    
+     */
+}
+
 pub fn part_two(input: &str) -> Option<usize> {
     let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
-    let mut linked_list = LinkedList::new();
+    let mut linked_list = List::new();
     list.iter().for_each(|n_str|{
         let n = n_str.parse::<i64>().unwrap();
         linked_list.append(n);
@@ -165,28 +272,27 @@ pub fn part_two(input: &str) -> Option<usize> {
         while let Some(node) = current {
             println!("node: {:?}", node);
             let stone_type: StoneType;
-            let n = node.value;
-            if n == 0 {
+            let n = node.as_ref().borrow().get_elem();
+            if *n == 0 {
                 stone_type = StoneType::IsZero;
-            } else if is_even_digits(n) {
+            } else if is_even_digits(*n) {
                 stone_type = StoneType::IsEvenDigits;
             } else {
                 stone_type = StoneType::Multiply;
             }
             match stone_type {
                 StoneType::IsZero => {
-                   node.value = 1;
+                   node.as_ref().borrow().set_elem(1);
                 }
                 StoneType::IsEvenDigits => {
-                    let result = split_stone(n);;
-                    node.value = result.0;
-                    let next_node = &node.next;
-                    let mut new_node = Box::new(Node::new(result.1));
-                    new_node.add_next(next_node);
-                    node.next = Some(new_node);
+                    let result = split_stone(*n);
+                    node.as_ref().borrow_mut().set_elem(result.0);
+                    let mut new_node = Rc::new(RefCell::new(Node::new(result.1)));
+                    new_node.next = node.as_ref().borrow().next.clone();
+                    node.as_ref().borrow().set_next(Some(new_node));
                 }
                 StoneType::Multiply => {
-                    node.value = n * 2024;
+                    node.elem = n * 2024;
                 }
             }
             current = &mut node.next;
@@ -195,8 +301,8 @@ pub fn part_two(input: &str) -> Option<usize> {
     });
 //    linked_list.print_list();
     println!("list: {:?}", linked_list);
-    let count = linked_list.count();
-    Some(count)
+//    let count = linked_list.count();
+    None
 /*    let stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
     let mut stone_list: Vec<i64> = stones.clone();
     let mut working_list: Vec<i64> = vec![];
