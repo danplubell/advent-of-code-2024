@@ -1,6 +1,7 @@
 use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-
+use rayon::prelude::*;
 advent_of_code::solution!(11);
 
 enum StoneType {
@@ -51,6 +52,16 @@ pub fn part_one(input: &str) -> Option<usize> {
 pub fn part_two(input: &str) -> Option<usize> {
     let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
     let mut stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
+    let mut cache:HashMap<(i64,i64), i64> = HashMap::new();
+
+    let m:Vec<i64> = stones.iter().map(|s| blink(*s, 75, &mut cache)).collect();
+    let r: i64= m.iter().sum(); 
+    Some(r as usize)
+}
+
+pub fn part_two3(input: &str) -> Option<usize> {
+    let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
+    let mut stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
     let mut work_list: &mut std::vec::Vec<i64> = &mut vec![];
     let mut ref_list: &mut Vec<i64>;
     let mut even_list: std::vec::Vec<i64> = vec![];
@@ -93,78 +104,42 @@ pub fn part_two(input: &str) -> Option<usize> {
     }
     Some(total)
 }
-/*
-pub fn part_two2(input: &str) -> Option<usize> {
-    let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
-    let mut linked_list = List::new();
-    list.iter().for_each(|n_str| {
-        let n = n_str.parse::<i64>().unwrap();
-        linked_list.append(n);
-    });
-
-    (0..25).for_each(|n| {
-        let mut current = linked_list.head.clone();
-        while let Some(node) = current {
+fn blink(stone: i64, blinks: i64, cache: &mut HashMap<(i64, i64), i64>) -> i64 {
+    if blinks == 0 {
+        return 1
+    }
+    let key = (stone,blinks);
+    let cache_value = cache.get(&key);
+    match cache_value {
+        Some(value) => *value,
+        None=> {
             let stone_type: StoneType;
-            let mut node_ref = &mut node.as_ref().borrow_mut();
-            let n = node_ref.get_elem();
-            if *n == 0 {
+            if stone == 0 {
                 stone_type = StoneType::IsZero;
-            } else if is_even_digits(*n) {
+            } else if is_even_digits(stone) {
                 stone_type = StoneType::IsEvenDigits;
             } else {
                 stone_type = StoneType::Multiply;
             }
-            match stone_type {
+            let result = match stone_type {
                 StoneType::IsZero => {
-                   node_ref.set_elem(1);
-                    current = node_ref.next.clone(); // Move to the next node
-
+                    blink(1, blinks -1, cache)
                 }
                 StoneType::IsEvenDigits => {
-                    let result = split_stone(*n);
-                    node_ref.set_elem(result.0);
-
-                    let mut new_node = Rc::new(RefCell::new(Node::new(result.1)));
-                    new_node.as_ref().borrow_mut().set_next(node_ref.get_next());
-                    node_ref.set_next(Some(new_node));
-                    let n_node = node_ref.get_next(); // Move to the next node
-                    match n_node {
-                        Some(l) => {
-                            let nl = l.as_ref().borrow_mut().get_next();
-                            match nl {
-                                Some(next_l) => {
-                                    current = next_l.as_ref().borrow_mut().get_next();
-                                }
-                                None => {
-                                    current = None
-                                }
-                            }
-                        }
-                        None=> {
-                            current = None
-                        }
-                    }
+                    let result = split_stone(stone);
+                    let r1 = blink(result.0, blinks -1, cache);
+                    let r2 = blink(result.1, blinks-1, cache);
+                    r1 + r2
                 }
                 StoneType::Multiply => {
-                    let x = n * 2024;
-                    node_ref.set_elem(x);
-                    current = node_ref.next.clone(); // Move to the next node
-
+                    blink(stone * 2024, blinks-1, cache)
                 }
-            }
-            println!("while: {:?}", linked_list);
+            };
+            cache.insert(key, result);
+            result
         }
-
-    });
-
-    //    linked_list.print_list();
-    println!("list: {:?}", linked_list);
-    let count = linked_list.count();
-    Some(count)
+    }
 }
-
- */
 
 #[cfg(test)]
 mod tests {
@@ -180,5 +155,14 @@ mod tests {
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(55312));
+    }
+    #[test]
+    fn text_blink() {
+        let mut cache:HashMap<(i64,i64), i64> = HashMap::new();
+        let l = [125_i64, 17];
+        let m: Vec<_> = l.iter().map(|s| blink(*s, 25, &mut cache)).collect();
+        //let r = blink(1,25, &mut cache);
+        let r: i64 = m.iter().sum();
+        println!("{}", r);
     }
 }
