@@ -33,7 +33,7 @@ impl Plant {
 }
 fn get_neighbor_region(species:char, row:usize, col:usize, plants:&HashMap<(Row,Col), Plant, >) -> Option<RegionId> {
     let neighbors:[(i32,i32);4] = [(-1,0), (0,1), (1,0), (0,-1)];
-    neighbors.map(|n|{
+    let plant_list: Vec<_> = neighbors.iter().map(|n|{
         let r:i32 = (row as i32) + (n.0);
         let c:i32 = (col as i32) + (n.1);
         let key_opt = match (r >=0,c>=0)  {
@@ -58,21 +58,35 @@ fn get_neighbor_region(species:char, row:usize, col:usize, plants:&HashMap<(Row,
             _=>None
         };
         result
-    });
-    None
+    }).filter(|x|x.is_some()).collect();
+    match plant_list.first() {
+        Some(v) => {
+            *v
+        },
+        None=> None
+    }
 }
 pub fn part_one(input: &str) -> Option<u32> {
     let mut plants: HashMap<(Row, Col), Plant> = HashMap::new();
     let mut regions: HashMap<RegionId, Vec<Plant>> = HashMap::new();
     let mut region_ids = 0..1000;
-    let mut key: RegionId = 0;
     input.lines().enumerate().for_each(|(row_idx, row)| {
-        key = region_ids.next().unwrap_or(9999999);
         row.chars().enumerate().for_each(|(col_idx, species)| {
+            // based on the neighbors is the plant in a region
             let in_region = get_neighbor_region(species, row_idx, col_idx, &plants);
-            let plant = Plant::new(species, 0, row_idx, col_idx);
-            plants.insert((row_idx, col_idx), plant);
             
+            // us the key that was returned or get a new key
+            let current_region_key = match in_region {
+                Some(region) => region,
+                None=>  region_ids.next().unwrap_or(9999999)
+            };
+            // create the plant
+            let plant = Plant::new(species, current_region_key, row_idx, col_idx);
+            
+            println!("plant: {:?}", plant);
+            // insert the plant
+            plants.insert((row_idx, col_idx), plant);
+            /*
             let _region  =  match regions.get(&key) {
                 Some(r) => r,
                 None => {
@@ -81,10 +95,12 @@ pub fn part_one(input: &str) -> Option<u32> {
                 }
             };
             
+            
+             */
         })
     });
-    println!("regions: {:?}", regions);
-    println!("plants: {:?}", plants);
+//    println!("regions: {:?}", regions);
+//    println!("plants: {:?}", plants);
     None
 }
 
