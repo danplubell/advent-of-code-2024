@@ -110,8 +110,7 @@ fn flood_neighbors(plant: &mut Plant, plants: &mut HashMap<Position, Plant>, reg
 }
 
  */
-
-fn flood_neighbors(plant: &mut Plant, plants: &HashMap<Position, Plant>, region_ids: &mut Range<i32>)  {
+fn get_neighbors(plant: &Plant, plants: &HashMap<Position, Plant>)-> Vec<Position> {
     let neighbor_positions: Vec<Position> = NEIGHBOR_OFFSETS
         .iter()
         .filter_map(|(row_offset, col_offset)| {
@@ -133,12 +132,15 @@ fn flood_neighbors(plant: &mut Plant, plants: &HashMap<Position, Plant>, region_
             .get(pos)
             .map_or(false, |p| p.species == plant.species))
         .collect();
+    neighbor_positions
+}
+fn flood_neighbors(plant: &mut Plant, plants: &mut HashMap<Position, Plant>, region_ids: &mut Range<i32>)  {
+    let neighbor_positions = get_neighbors(plant, plants);
     let region_id = neighbor_positions.iter()
         .find_map(|pos| plants.get(pos).and_then(|p| p.region))
         .unwrap_or_else(|| RegionId(region_ids.next().unwrap() as usize));
     if plant.region.is_none() {
         plant.region = Option::from(region_id);
-        plants.insert(plant.position, plant.clone());
     }
     
     
@@ -150,6 +152,8 @@ fn flood_neighbors(plant: &mut Plant, plants: &HashMap<Position, Plant>, region_
             }
         }
     }
+    plants.insert(plant.position, plant.clone());
+
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
