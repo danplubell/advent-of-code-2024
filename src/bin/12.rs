@@ -1,106 +1,120 @@
 use std::collections::HashMap;
-use serde_json::value::Index;
 
 advent_of_code::solution!(12);
-type SpeciesType = char;
-type RegionId = usize;
-type Row = usize;
-type Col = usize;
-#[derive(Debug, PartialEq, Clone)]
-struct Plant {
-    species: SpeciesType,
-    region: usize,
+
+// Use meaningful newtype patterns instead of type aliases for better type safety
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct Position {
     row: usize,
     col: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct RegionId(usize);
+
+#[derive(Debug, PartialEq, Clone)]
+struct Plant {
+    species: char,
+    region: RegionId,
+    position: Position,
+    // Group related fields into a more meaningful structure
+    borders: Borders,
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
+struct Borders {
     top: bool,
     right: bool,
     bottom: bool,
     left: bool,
 }
+
+
 impl Plant {
-    fn new(species: SpeciesType, region: usize, row: usize, col: usize)-> Self {
+    fn new(species: char, region: RegionId, position: Position) -> Self {
         Self {
             species,
             region,
-            row, 
-            col,
-            top: false,
-            right: false,
-            bottom: false,
-            left: false,
+            position,
+            borders: Borders::default(),
         }
     }
 }
-fn get_neighbor_region(species:char, row:usize, col:usize, plants:&HashMap<(Row,Col), Plant, >) -> Option<RegionId> {
-    let neighbors:[(i32,i32);4] = [(-1,0), (0,1), (1,0), (0,-1)];
-    let plant_list: Vec<_> = neighbors.iter().map(|n|{
-        let r:i32 = (row as i32) + (n.0);
-        let c:i32 = (col as i32) + (n.1);
-        let key_opt = match (r >=0,c>=0)  {
-            (true, true) => Some((r,c)),
-            _=>None
-        };
-        let result:Option<RegionId> = match key_opt {
-            Some(key_parts) => {
-                let key = (key_parts.0 as usize,key_parts.1 as usize );
-                let plant = plants.get(&key);
-                match plant {
-                    Some(p) => {
-                      if p.species == species {
-                          Some(p.region)
-                      }else {
-                          None
-                      }
-                    },
-                    None => None
-                }
-            }
-            _=>None
-        };
-        result
-    }).filter(|x|x.is_some()).collect();
-    match plant_list.first() {
-        Some(v) => {
-            *v
-        },
-        None=> None
-    }
+
+const NEIGHBOR_OFFSETS: [(i32, i32); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
+
+fn get_neighbor_region(
+    species: char,
+    position: Position,
+    plants: &HashMap<Position, Plant>,
+) -> Option<RegionId> {
+    NEIGHBOR_OFFSETS
+        .iter()
+        .filter_map(|(row_offset, col_offset)| {
+            let new_row = position.row.checked_add_signed(*row_offset as isize)?;
+            let new_col = position.col.checked_add_signed(*col_offset as isize)?;
+
+            let neighbor_pos = Position {
+                row: new_row,
+                col: new_col,
+            };
+            plants
+                .get(&neighbor_pos)
+                .filter(|plant| plant.species == species)
+                .map(|plant| plant.region)
+        })
+        .next()
 }
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut plants: HashMap<(Row, Col), Plant> = HashMap::new();
+    let mut plants: HashMap<Position, Plant> = HashMap::new();
     let mut regions: HashMap<RegionId, Vec<Plant>> = HashMap::new();
     let mut region_ids = 0..1000;
     input.lines().enumerate().for_each(|(row_idx, row)| {
         row.chars().enumerate().for_each(|(col_idx, species)| {
             // based on the neighbors is the plant in a region
-            let in_region = get_neighbor_region(species, row_idx, col_idx, &plants);
-            
+            let position = Position {
+                row: row_idx,
+                col: col_idx,
+            };
+            let in_region = get_neighbor_region(species, position, &plants);
+
             // us the key that was returned or get a new key
             let current_region_key = match in_region {
                 Some(region) => region,
-                None=>  region_ids.next().unwrap_or(9999999)
+                None => RegionId(region_ids.next().unwrap_or(9999999)),
             };
             // create the plant
-            let plant = Plant::new(species, current_region_key, row_idx, col_idx);
+            let mut plant = Plant::new(
+                species,
+                current_region_key,
+                Position {
+                    row: row_idx,
+                    col: col_idx,
+                },
+            );
             
-            println!("plant: {:?}", plant);
+//            println!("plant: {:?}", plant);
             // insert the plant
-            plants.insert((row_idx, col_idx), plant);
-            /*
-            let _region  =  match regions.get(&key) {
+            plants.insert(
+                Position {
+                    row: row_idx,
+                    col: col_idx,
+                },
+                plant,
+            );
+            
+            
+            let _region  =  match regions.get(&current_region_key) {
                 Some(r) => r,
                 None => {
-                    regions.insert(key,vec![]);
-                    regions.get(&key).unwrap()
+                    regions.insert(current_region_key,vec![]);
+                    regions.get(&current_region_key).unwrap()
                 }
             };
-            
-            
-             */
         })
     });
-//    println!("regions: {:?}", regions);
-//    println!("plants: {:?}", plants);
+    //    println!("regions: {:?}", regions);
+    //    println!("plants: {:?}", plants);
     None
 }
 
