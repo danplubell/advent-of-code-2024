@@ -1,10 +1,11 @@
+use std::cmp::max;
 use std::collections::HashMap;
 use std::ops::{DerefMut, Range};
 
 advent_of_code::solution!(12);
 
 // Use meaningful newtype patterns instead of type aliases for better type safety
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 struct Position {
     row: usize,
     col: usize,
@@ -12,7 +13,7 @@ struct Position {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct RegionId(usize);
-
+type Plants = HashMap<Position, Plant>;
 #[derive(Debug, PartialEq, Clone)]
 struct Plant {
     species: char,
@@ -20,6 +21,7 @@ struct Plant {
     position: Position,
     // Group related fields into a more meaningful structure
     borders: Borders,
+    neighbors: Neighbors,
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -37,10 +39,17 @@ impl Plant {
             region,
             position,
             borders: Borders::default(),
+            neighbors: Neighbors::default(),
         }
     }
 }
-
+#[derive(Debug, Clone, PartialEq, Default)]
+struct Neighbors {
+    top: Option<Position>,
+    right: Option<Position>,
+    bottom: Option<Position>,
+    left: Option<Position>,
+}
 const NEIGHBOR_OFFSETS: [(i32, i32); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
 
 /*
@@ -96,13 +105,13 @@ fn flood_neighbors(plant: &mut Plant, plants: &mut HashMap<Position, Plant>, reg
     // have  list of neighbors now
     // now which region to use???
     // do any of the neighbors have a regions?
-   
+
     let found_neighbor =  neighbors.iter().find(|neighbor| neighbor.region.is_some());
     let region_id = match found_neighbor {
         Some(n) => n.region.unwrap(),
         None => RegionId(region_ids.next().unwrap() as usize)
     };
-    
+
     // update neighbors with regionId
     for neighbor in neighbors {
         neighbor.region = Some(region_id);
@@ -110,56 +119,69 @@ fn flood_neighbors(plant: &mut Plant, plants: &mut HashMap<Position, Plant>, reg
 }
 
  */
-fn get_neighbors(plant: &Plant, plants: &HashMap<Position, Plant>)-> Vec<Position> {
-    let neighbor_positions: Vec<Position> = NEIGHBOR_OFFSETS
-        .iter()
-        .filter_map(|(row_offset, col_offset)| {
-            let new_row = plant
-                .position
-                .row
-                .checked_add_signed(*row_offset as isize)?;
-            let new_col = plant
-                .position
-                .col
-                .checked_add_signed(*col_offset as isize)?;
-
-            Some(Position {
-                row: new_row,
-                col: new_col,
-            })
+fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
+    Option::from(Position {
+        row: position.row.checked_add_signed(offset.0 as isize)?,
+        col: position.col.checked_add_signed(offset.1 as isize)?,
+    })
+}
+fn get_neighbors(plant: &Plant, plants: &Plants) -> Neighbors {
+    let mut neighbor_positions: [Option<Position>; 4] = [None, None, None, None];
+    for (i, offset) in NEIGHBOR_OFFSETS.iter().enumerate() {
+        neighbor_positions[i] = calc_position(NEIGHBOR_OFFSETS[i], plant.position);
+    }
+    Neighbors {
+        top: neighbor_positions[0],
+        right: neighbor_positions[1],
+        bottom: neighbor_positions[2],
+        left: neighbor_positions[3],
+    }
+}
+fn flood_neighbors(
+    plant: &mut Plant,
+    plants: &mut HashMap<Position, Plant>,
+    region_ids: &mut Range<i32>,
+) -> HashMap<Position, Plant> {
+    plants.clone()
+}
+fn is_species_neighbor(position: Option<Position>, plant: &Plant, plants: &Plants) -> Option<Position> {
+    position.and_then(|pos| {
+        plants.get(&pos).and_then(|neighbor| {
+            (neighbor.species == plant.species).then_some(neighbor.position)
         })
-        .filter(|pos| plants
-            .get(pos)
-            .map_or(false, |p| p.species == plant.species))
-        .collect();
-    neighbor_positions
+    })
 }
-fn flood_neighbors(plant: &mut Plant, plants: &mut HashMap<Position, Plant>, region_ids: &mut Range<i32>)  {
-    let neighbor_positions = get_neighbors(plant, plants);
-    let region_id = neighbor_positions.iter()
-        .find_map(|pos| plants.get(pos).and_then(|p| p.region))
-        .unwrap_or_else(|| RegionId(region_ids.next().unwrap() as usize));
-    if plant.region.is_none() {
-        plant.region = Option::from(region_id);
+fn get_species_neighbors(plant:&Plant, plants: &Plants)->Neighbors {
+    Neighbors {
+        top: is_species_neighbor(plant.neighbors.top,plant, plants),
+        right: is_species_neighbor(plant.neighbors.right,plant, plants),
+        bottom: is_species_neighbor(plant.neighbors.bottom, plant, plants),
+        left: is_species_neighbor(plant.neighbors.left, plant, plants),
     }
-    
-    
-    // Recursively flood to neighbors
-    for pos in neighbor_positions {
-        if let Some(neighbor) = plants.get_mut(&pos) {
-            if neighbor.region.is_none() {
-                flood_neighbors(neighbor, plants, region_ids);
-            }
-        }
-    }
-    plants.insert(plant.position, plant.clone());
-
 }
-
+fn get_neighbor_region_id(neighbors: &Neighbors, plants: &Plants) -> Option<RegionId>{
+    let a: [Option<Position>;4] = [neighbors.top, neighbors.right, neighbors.bottom, neighbors.left];
+    a.iter().min().map(|n| {
+        let p = match n {
+           Some(v) => v,
+            _=> return None
+            
+        };
+        let neighbor_plant = plants.get(&p);
+        return neighbor_plant.map(|p| p.region)?;
+    });
+    None
+}
+fn assign_regions(plants: &mut Plants){
+    plants.iter().for_each(|p| {
+        let species_neighbors = get_species_neighbors(p.1, plants);
+        let potential_region_id = get_neighbor_region_id(&species_neighbors, plants);
+    })
+}
 pub fn part_one(input: &str) -> Option<u32> {
     let mut plants: HashMap<Position, Plant> = HashMap::new();
     let mut regions: HashMap<RegionId, Vec<Plant>> = HashMap::new();
-    let mut region_ids:Range<i32> = 0..1000;
+    let mut region_ids: Range<i32> = 0..1000;
     input.lines().enumerate().for_each(|(row_idx, row)| {
         row.chars().enumerate().for_each(|(col_idx, species)| {
             // based on the neighbors is the plant in a region
@@ -168,26 +190,18 @@ pub fn part_one(input: &str) -> Option<u32> {
                 col: col_idx,
             };
             // create the plant
-            let mut plant = Plant::new(
-                species,
-                None,
-                position,
-            );
+            let mut plant = Plant::new(species, None, position, );
+            let neighbors = get_neighbors(&plant, &plants);
+            plant.neighbors = neighbors;
 
-            //            println!("plant: {:?}", plant);
             // insert the plant
-            plants.insert(
-                position,
-                plant.clone(),
-            );
-           let mut p = plant.clone();
-            flood_neighbors(&mut p, &mut plants, &mut region_ids);
+            plants.insert(position, plant.clone());
         })
     });
-    //    println!("regions: {:?}", regions);
+    // now we have all the plants in a hashmap by position
+    // let's try to put them in regions
+    assign_regions(&mut plants);
     println!("plants: {:?}", plants);
-    plants.iter().for_each(|p| println!("{:?}", p));
-//    plants.iter().for_each(|i| {});
     None
 }
 
@@ -265,5 +279,70 @@ mod tests {
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
+    }
+    #[test]
+    fn test_calc_position() {
+        assert_eq!(
+            calc_position((0, 0), Position { row: 0, col: 0 }),
+            Some(Position { row: 0, col: 0 })
+        );
+        assert_eq!(
+            calc_position((1, 0), Position { row: 0, col: 0 }),
+            Some(Position { row: 1, col: 0 })
+        );
+        assert_eq!(
+            calc_position((0, 1), Position { row: 0, col: 0 }),
+            Some(Position { row: 0, col: 1 })
+        );
+        assert_eq!(
+            calc_position((0, 2), Position { row: 0, col: 0 }),
+            Some(Position { row: 0, col: 2 })
+        );
+        assert_eq!(calc_position((0, -1), Position { row: 0, col: 0 }), None);
+        assert_eq!(calc_position((0, -2), Position { row: 0, col: 0 }), None);
+    }
+    #[test]
+    fn test_get_neighbors() {
+        let mut plants: Plants = Plants::new();
+        let p = Plant {
+            species: 'a',
+            region: None,
+            position: Position { row: 0, col: 0 },
+            borders: Default::default(),
+            neighbors: Neighbors::default(),
+        };
+        plants.insert(p.position, p);
+        let p = Plant {
+            species: 'a',
+            region: None,
+            position: Position { row: 0, col: 1 },
+            borders: Default::default(),
+            neighbors: Neighbors::default(),
+        };
+        plants.insert(p.position, p);
+        let p = Plant {
+            species: 'a',
+            region: None,
+            position: Position { row: 1, col: 0 },
+            borders: Default::default(),
+            neighbors: Neighbors::default(),
+        };
+        plants.insert(p.position, p);
+        let p = Plant {
+            species: 'a',
+            region: None,
+            position: Position { row: 0, col: 0 },
+            borders: Default::default(),
+            neighbors: Neighbors::default(),
+        };
+
+        let n = get_neighbors(&p, &plants);
+        let expected = Neighbors {
+            top: None,
+            right: Some(Position { row: 0, col: 1 }),
+            bottom: Some(Position { row: 1, col: 0 }),
+            left: None,
+        };
+        assert_eq!(n, expected);
     }
 }
