@@ -108,55 +108,14 @@ fn get_neighbor_region_id(neighbors: &Neighbors, plants: &Plants) -> Option<Regi
     .filter_map(|p| plants.get(p).map(|plant| plant.region))
     .min()?
 }
-fn assign_regions(plants: &mut Plants, mut region_ids: &mut Range<i32>) {
-    let v = plants.iter().sorted_by_key(|&(k, _)| k);
+fn assign_regions(plants: &mut Plants, mut region_ids: Range<i32>) {
     // 1. Collect plant positions and their corresponding neighbor positions
     let plant_neighbors: Vec<(Position, Neighbors)> = plants
         .iter()
         .sorted_by_key(|&(k, _)| k)
         .map(|(pos, plant)| (*pos, get_species_neighbors(plant, plants)))
         .collect();
-    println!("neighbors: {:?}", plant_neighbors);
-
-    
-    // 2. Iterate over the collected data and assign regions
-    for (pos, neighbors) in plant_neighbors {
-        let potential_region_id = get_neighbor_region_id(&neighbors, plants);
-        println!("potential_region_id: {:?} {:?}", pos, potential_region_id);
-
-        if let Some(plant) = plants.get_mut(&pos) {
-            let region_id = match potential_region_id {
-                Some(v) => potential_region_id,
-                _ => {
-                    let new_region = region_ids.next().unwrap();
-                    Some(RegionId(new_region))
-                }
-            };
-            println!("new_region_id: {:?} {:?}", region_id, plant);
-            plant.region = region_id;
-            /*
-            plants.iter().for_each(|(k, v)| {
-                if v.species == 'R' {
-                    println!("{:?}", v);
-                }
-            });
-            
-             */
-
-            //            println!("new plants: {:?}", plants);
-        }
-    }
-}
-fn assign_regions_rev(plants: &mut Plants, mut region_ids: &mut Range<i32>) {
-    let v = plants.iter().sorted_by_key(|&(k, _)| k);
-    // 1. Collect plant positions and their corresponding neighbor positions
-    let plant_neighbors: Vec<(Position, Neighbors)> = plants
-        .iter()
-        .sorted_by_key(|&(k, _)| k)
-        .rev().map(|(pos, plant)| (*pos, get_species_neighbors(plant, plants)))
-        .collect();
-    println!("neighbors: {:?}", plant_neighbors);
-
+   // println!("neighbors: {:?}", plant_neighbors);
 
     // 2. Iterate over the collected data and assign regions
     for (pos, neighbors) in plant_neighbors {
@@ -173,20 +132,10 @@ fn assign_regions_rev(plants: &mut Plants, mut region_ids: &mut Range<i32>) {
             };
             println!("new_region_id: {:?} {:?}", region_id, plant);
             plant.region = region_id;
-            /*
-            plants.iter().for_each(|(k, v)| {
-                if v.species == 'R' {
-                    println!("{:?}", v);
-                }
-            });
-            
-             */
-
-            //            println!("new plants: {:?}", plants);
+            println!("new plants: {:?}", plants);
         }
     }
 }
-
 pub fn part_one(input: &str) -> Option<u32> {
     let mut plants: HashMap<Position, Plant> = HashMap::new();
     let mut regions: HashMap<RegionId, Vec<Plant>> = HashMap::new();
@@ -209,15 +158,12 @@ pub fn part_one(input: &str) -> Option<u32> {
     });
     // now we have all the plants in a hashmap by position
     // let's try to put them in regions
-    assign_regions(&mut plants, &mut region_ids);
-    assign_regions_rev(&mut plants, &mut region_ids);
+    assign_regions(&mut plants, region_ids);
     plants.iter().for_each(|(k, v)| {
-        if v.species == 'Z' {
+        if v.species == 'R' {
             println!("{:?}", v);
         }
     });
-    
-     
     //    println!("plants: {:?}", plants);
     None
 }
