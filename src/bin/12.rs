@@ -126,9 +126,10 @@ fn get_neighbor_region_id(neighbors: &Neighbors, plants: &Plants) -> Option<Regi
     .filter_map(|p| plants.get(p).map(|plant| plant.region))
     .min()?
 }
-fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>) -> HashMap<Position,Plant>{
+fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>, region_ids: &mut Range<i32>) -> HashMap<Position,Plant>{
     let mut plants_clone = plants.clone();
-    let region_id = plant.region.map_or()
+    let region_id:Option<RegionId> = plant.region.map_or_else(|| Some(RegionId(region_ids.next().unwrap())), |r| Some(r) );
+    
     for neighbor in      [
         plant.neighbors.top,
         plant.neighbors.right,
@@ -144,9 +145,9 @@ fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<
                 visit_list.insert(neighbor_plant.position,true);
                 neighbor_plant.region = Some(RegionId(0));
                 let mut new_plant = neighbor_plant.clone();
-                new_plant.region = plant.region;
-                plants_clone.insert(*neighbor,new_plant );
-                plants_clone = visit_neighbors(neighbor_plant, &mut plants_clone, visit_list);
+                new_plant.region = region_id;
+                plants_clone.insert(*neighbor,new_plant.clone() );
+                plants_clone = visit_neighbors(&new_plant, &mut plants_clone, visit_list,region_ids );
             }
         }
     }
@@ -273,14 +274,14 @@ pub fn part_one(input: &str) -> Option<u32> {
     let mut visit_list = HashMap::new();
     let mut plants_clone = plants.clone();
     plants.iter().sorted_by_key(|&(k, _)| k).for_each(|(_,p)|{
-       plants_clone =  visit_neighbors(p, &mut plants_clone, &mut visit_list);
+       plants_clone =  visit_neighbors(p, &mut plants_clone, &mut visit_list, &mut region_ids);
     });
     // now we have all the plants in a hashmap by position
     // let's try to put them in regions
 //    assign_regions(&mut plants, &mut region_ids);
 //    assign_regions_rev(&mut plants, &mut region_ids);
     plants_clone.iter().for_each(|(k, v)| {
-        if v.species == 'E' {
+        if v.species == 'Z' {
             println!("{:?}", v);
         }
     });
