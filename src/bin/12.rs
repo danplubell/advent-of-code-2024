@@ -126,8 +126,8 @@ fn get_neighbor_region_id(neighbors: &Neighbors, plants: &Plants) -> Option<Regi
     .filter_map(|p| plants.get(p).map(|plant| plant.region))
     .min()?
 }
-fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>) {
-
+fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>) -> HashMap<Position,Plant>{
+    let mut plants_clone = plants.clone();
     for neighbor in      [
         plant.neighbors.top,
         plant.neighbors.right,
@@ -135,15 +135,21 @@ fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<
         plant.neighbors.left,
     ]
         .iter()
-        .flatten()
-        .filter_map(|p| plants.get(p)) {
-        let was_visited = visit_list.get(&neighbor.position).is_some();
-        if neighbor.species == plant.species && !was_visited {
-            println!("plant: {} {:?} neighbor: {} {:?}", plant.species, plant.position, neighbor.species, neighbor.position);
-            visit_list.insert(neighbor.position,true);
-            visit_neighbors(neighbor, plants, visit_list)
+        .flatten() {
+        let was_visited = visit_list.get(&neighbor).is_some();
+        if let Some(neighbor_plant) = plants.get_mut(&neighbor) {
+            if neighbor_plant.species == plant.species && !was_visited {
+                println!("plant: {} {:?} neighbor: {} {:?}", plant.species, plant.position, neighbor_plant.species, neighbor_plant.position);
+                visit_list.insert(neighbor_plant.position,true);
+                neighbor_plant.region = Some(RegionId(0));
+                let mut new_plant = neighbor_plant.clone();
+                new_plant.region = plant.region;
+                plants_clone.insert(*neighbor,new_plant );
+                plants_clone = visit_neighbors(neighbor_plant, &mut plants_clone, visit_list);
+            }
         }
     }
+    plants_clone
     /*
      [
         plant.neighbors.top,
@@ -264,22 +270,22 @@ pub fn part_one(input: &str) -> Option<u32> {
         })
     });
     let mut visit_list = HashMap::new();
-    
+    let mut plants_clone = plants.clone();
     plants.iter().sorted_by_key(|&(k, _)| k).for_each(|(_,p)|{
-        visit_neighbors(p, &mut plants, &mut visit_list);
+       plants_clone =  visit_neighbors(p, &mut plants_clone, &mut visit_list);
     });
     // now we have all the plants in a hashmap by position
     // let's try to put them in regions
 //    assign_regions(&mut plants, &mut region_ids);
 //    assign_regions_rev(&mut plants, &mut region_ids);
- /*   plants.iter().for_each(|(k, v)| {
-        if v.species == 'R' {
+    plants_clone.iter().for_each(|(k, v)| {
+        if v.species == 'E' {
             println!("{:?}", v);
         }
     });
     
     
-  */
+  
      
     //    println!("plants: {:?}", plants);
     None
