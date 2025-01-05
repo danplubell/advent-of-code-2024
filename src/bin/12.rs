@@ -128,6 +128,7 @@ fn get_neighbor_region_id(neighbors: &Neighbors, plants: &Plants) -> Option<Regi
 }
 fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>) -> HashMap<Position,Plant>{
     let mut plants_clone = plants.clone();
+    let region_id = plant.region.map_or()
     for neighbor in      [
         plant.neighbors.top,
         plant.neighbors.right,
