@@ -126,6 +126,44 @@ fn get_neighbor_region_id(neighbors: &Neighbors, plants: &Plants) -> Option<Regi
     .filter_map(|p| plants.get(p).map(|plant| plant.region))
     .min()?
 }
+fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>) {
+
+    for neighbor in      [
+        plant.neighbors.top,
+        plant.neighbors.right,
+        plant.neighbors.bottom,
+        plant.neighbors.left,
+    ]
+        .iter()
+        .flatten()
+        .filter_map(|p| plants.get(p)) {
+        let was_visited = visit_list.get(&neighbor.position).is_some();
+        if neighbor.species == plant.species && !was_visited {
+            println!("plant: {} {:?} neighbor: {} {:?}", plant.species, plant.position, neighbor.species, neighbor.position);
+            visit_list.insert(neighbor.position,true);
+            visit_neighbors(neighbor, plants, visit_list)
+        }
+    }
+    /*
+     [
+        plant.neighbors.top,
+        plant.neighbors.right,
+        plant.neighbors.bottom,
+        plant.neighbors.left,
+    ]
+        .iter()
+        .flatten()
+        .filter_map(|p| plants.get(p)).for_each(|neighbor:&mut Plant|{
+         if neighbor.species == plant.species {
+             println!("plant: {} {:?} neighbor: {} {:?}", plant.species, plant.position, neighbor.species, neighbor.position);
+             neighbor.visited = true;
+             visit_neighbors(neighbor, plants)
+         }
+     }
+     );
+     
+     */
+}
 fn assign_regions(plants: &mut Plants, mut region_ids: &mut Range<i32>) {
     let v = plants.iter().sorted_by_key(|&(k, _)| k);
     // 1. Collect plant positions and their corresponding neighbor positions
@@ -225,16 +263,23 @@ pub fn part_one(input: &str) -> Option<u32> {
             plants.insert(position, plant.clone());
         })
     });
+    let mut visit_list = HashMap::new();
+    
+    plants.iter().sorted_by_key(|&(k, _)| k).for_each(|(_,p)|{
+        visit_neighbors(p, &mut plants, &mut visit_list);
+    });
     // now we have all the plants in a hashmap by position
     // let's try to put them in regions
-    assign_regions(&mut plants, &mut region_ids);
-    assign_regions_rev(&mut plants, &mut region_ids);
-    plants.iter().for_each(|(k, v)| {
+//    assign_regions(&mut plants, &mut region_ids);
+//    assign_regions_rev(&mut plants, &mut region_ids);
+ /*   plants.iter().for_each(|(k, v)| {
         if v.species == 'R' {
             println!("{:?}", v);
         }
     });
     
+    
+  */
      
     //    println!("plants: {:?}", plants);
     None
@@ -298,6 +343,7 @@ mod tests {
             position: Position { row: 0, col: 1 },
             borders: Default::default(),
             neighbors: Neighbors::default(),
+
         };
         plants.insert(p.position, p);
         let p = Plant {
@@ -314,6 +360,7 @@ mod tests {
             position: Position { row: 0, col: 0 },
             borders: Default::default(),
             neighbors: Neighbors::default(),
+
         };
 
         let n = get_neighbors(&p, &plants);
