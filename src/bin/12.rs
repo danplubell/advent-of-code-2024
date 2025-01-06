@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::ops::{Range};
+use std::ops::Range;
 advent_of_code::solution!(12);
 
 // Use meaningful newtype patterns instead of type aliases for better type safety
@@ -9,10 +9,11 @@ struct Position {
     row: usize,
     col: usize,
 }
-#[derive(Debug,Clone,Copy,PartialEq,Eq,Hash,Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 struct Region {
     perimeter: i32,
     area: i32,
+    corners: i32,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct RegionId(i32);
@@ -79,19 +80,19 @@ fn is_species_neighbor(
     plants: &Plants,
 ) -> Option<Position> {
     match position {
-        Some(p)=> {
+        Some(p) => {
             let found_plant = plants.get(&p);
             match found_plant {
                 Some(v) => {
                     if v.species == plant.species {
-                        return position
+                        return position;
                     }
                     None
-                },
-                _=>None
+                }
+                _ => None,
             }
         }
-        _=> None
+        _ => None,
     }
     /*
     position.and_then(|pos| {
@@ -99,7 +100,7 @@ fn is_species_neighbor(
             .get(&pos)
             .and_then(|neighbor| (neighbor.species == plant.species).then_some(neighbor.position))
     })
-    
+
      */
 }
 fn get_species_neighbors(plant: &Plant, plants: &Plants) -> Neighbors {
@@ -110,18 +111,28 @@ fn get_species_neighbors(plant: &Plant, plants: &Plants) -> Neighbors {
         left: is_species_neighbor(plant.neighbors.left, plant, plants),
     }
 }
-fn is_single_plant(neighbors: &Neighbors)->bool {
+fn is_single_plant(neighbors: &Neighbors) -> bool {
     let n: Vec<_> = [
         neighbors.top,
         neighbors.right,
         neighbors.bottom,
         neighbors.left,
-    ].into_iter().flatten().collect();
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
     n.is_empty()
 }
-fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<Position, bool>, region_ids: &mut Range<i32>) -> HashMap<Position,Plant>{
+fn visit_neighbors(
+    plant: &Plant,
+    plants: &mut Plants,
+    visit_list: &mut HashMap<Position, bool>,
+    region_ids: &mut Range<i32>,
+) -> HashMap<Position, Plant> {
     let mut plants_clone = plants.clone();
-    let region_id:Option<RegionId> = plant.region.map_or_else(|| Some(RegionId(region_ids.next().unwrap())), |r| Some(r) );
+    let region_id: Option<RegionId> = plant
+        .region
+        .map_or_else(|| Some(RegionId(region_ids.next().unwrap())), |r| Some(r));
     let species_neighbors = get_species_neighbors(plant, plants);
     if is_single_plant(&species_neighbors) {
         let mut new_plant = plant.clone();
@@ -129,38 +140,66 @@ fn visit_neighbors(plant: &Plant, plants: &mut Plants, visit_list: &mut HashMap<
         plants_clone.insert(new_plant.position, new_plant);
         visit_list.insert(plant.position, true);
     }
-    for neighbor in      [
+    for neighbor in [
         plant.neighbors.top,
         plant.neighbors.right,
         plant.neighbors.bottom,
         plant.neighbors.left,
     ]
-        .iter()
-        .flatten() {
+    .iter()
+    .flatten()
+    {
         let was_visited = visit_list.get(&neighbor).is_some();
         if let Some(neighbor_plant) = plants.get_mut(&neighbor) {
             if neighbor_plant.species == plant.species && !was_visited {
-                visit_list.insert(neighbor_plant.position,true);
+                visit_list.insert(neighbor_plant.position, true);
                 neighbor_plant.region = Some(RegionId(0));
                 let mut new_plant = neighbor_plant.clone();
                 new_plant.region = region_id;
-                plants_clone.insert(*neighbor,new_plant.clone() );
-                plants_clone = visit_neighbors(&new_plant, &mut plants_clone, visit_list,region_ids );
+                plants_clone.insert(*neighbor, new_plant.clone());
+                plants_clone =
+                    visit_neighbors(&new_plant, &mut plants_clone, visit_list, region_ids);
             }
         }
     }
     plants_clone
 }
 fn get_perimeter(plant: &Plant, plants: &Plants) -> i32 {
-    let neighbors = get_species_neighbors(plant,plants);
+    let neighbors = get_species_neighbors(plant, plants);
     let n = [
         neighbors.top,
         neighbors.right,
         neighbors.bottom,
-        neighbors.left
+        neighbors.left,
     ];
     (4 - n.iter().flatten().collect::<Vec<_>>().len()) as i32
 }
+fn get_corners(plant: &Plant, plants: &Plants) -> i32 {
+    let neighbors = get_species_neighbors(plant, plants);
+    let n = [
+        neighbors.top,
+        neighbors.right,
+        neighbors.bottom,
+        neighbors.left,
+    ];
+    println!("plan: {:?} {:?}",plant.position, plant.neighbors);
+    let corners = match n {
+        [None, None, None, None] => 4, // 4 corners
+        [None, None, Some(_), Some(_)] => 1, // top, right and inside corner
+        [Some(_), None, None, Some(_)] => 1, // right, bottom
+        [Some(_), Some(_), None, None] => 1, // left, bottom
+        [None, Some(_), Some(_), None] => 1, // left, top
+        [None, None, None, Some(_)] => 2,
+        [None, Some(_), None, None] => 2,
+        [Some(_), None, None, None] => 2,
+        [None, None, Some(_), None] => 2,
+        [Some(_), Some(_), Some(_), Some(_)] => 0,
+        _=>0,
+    };
+//    println!("{:?} {} {:?}", plant.position,corners, n);
+    corners
+}
+
 pub fn part_one(input: &str) -> Option<i32> {
     let mut plants: HashMap<Position, Plant> = HashMap::new();
     let mut region_ids: Range<i32> = 0..i32::MAX;
@@ -182,33 +221,94 @@ pub fn part_one(input: &str) -> Option<i32> {
     });
     let mut visit_list = HashMap::new();
     let mut plants_clone = plants.clone();
-    plants.iter().sorted_by_key(|&(k, _)| k).for_each(|(_,p)|{
+    plants.iter().sorted_by_key(|&(k, _)| k).for_each(|(_, p)| {
         let was_visited = visit_list.get(&p.position).is_some();
         if !was_visited {
-            plants_clone =  visit_neighbors(p, &mut plants_clone, &mut visit_list, &mut region_ids);
+            plants_clone = visit_neighbors(p, &mut plants_clone, &mut visit_list, &mut region_ids);
         }
     });
-    let mut regions:HashMap<RegionId, Region> = HashMap::new();
+    let mut regions: HashMap<RegionId, Region> = HashMap::new();
     plants_clone.iter().for_each(|(k, v)| {
-        if v.region.is_some() {
+       // if v.region.is_some() {
             let plant_region = v.region.unwrap();
-            let mut region = regions.get_mut(&plant_region).map_or_else(|| Region {perimeter: 0, area: 0}, |r| *r);
+            let mut region = regions.get_mut(&plant_region).map_or_else(
+                || Region {
+                    perimeter: 0,
+                    area: 0,
+                    corners: 0,
+                },
+                |r| *r,
+            );
             region.area += 1;
             region.perimeter += get_perimeter(v, &plants_clone);
+            region.corners += get_corners(v, &plants_clone);
             regions.insert(plant_region, region);
-        }
+      //  }
     });
-    let t = regions.iter().fold(0, |acc, (_,r)|{
-        
+    let t = regions.iter().fold(0, |acc, (_, r)| {
         let price = r.area * r.perimeter;
         acc + price
     });
+    let t = regions.iter().fold(0, |acc, (_, r)| {
+        let price = r.area * r.perimeter;
+        acc + price
+    });
+
     Some(t)
 }
 
+pub fn part_two(input: &str) -> Option<i32> {
+    let mut plants: HashMap<Position, Plant> = HashMap::new();
+    let mut region_ids: Range<i32> = 0..i32::MAX;
+    input.lines().enumerate().for_each(|(row_idx, row)| {
+        row.chars().enumerate().for_each(|(col_idx, species)| {
+            // based on the neighbors is the plant in a region
+            let position = Position {
+                row: row_idx,
+                col: col_idx,
+            };
+            // create the plant
+            let mut plant = Plant::new(species, None, position);
+            let neighbors = get_neighbors(&plant, &plants);
+            plant.neighbors = neighbors;
 
-pub fn part_two(_input: &str) -> Option<i32> {
-    None
+            // insert the plant
+            plants.insert(position, plant.clone());
+        })
+    });
+    let mut visit_list = HashMap::new();
+    let mut plants_clone = plants.clone();
+    plants.iter().sorted_by_key(|&(k, _)| k).for_each(|(_, p)| {
+        let was_visited = visit_list.get(&p.position).is_some();
+        if !was_visited {
+            plants_clone = visit_neighbors(p, &mut plants_clone, &mut visit_list, &mut region_ids);
+        }
+    });
+    let mut regions: HashMap<RegionId, Region> = HashMap::new();
+    plants_clone.iter().for_each(|(k, v)| {
+        if v.region.is_some() {
+            let plant_region = v.region.unwrap();
+            let mut region = regions.get_mut(&plant_region).map_or_else(
+                || Region {
+                    perimeter: 0,
+                    area: 0,
+                    corners: 0,
+                },
+                |r| *r,
+            );
+            region.area += 1;
+            region.perimeter += get_perimeter(v, &plants_clone);
+            region.corners += get_corners(v, &plants_clone);
+            regions.insert(plant_region, region);
+        }
+    });
+    let t = regions.iter().fold(0, |acc, (_, r)| {
+        println!("region: {} {}",r.area, r.corners);
+        let price = r.area * r.corners;
+        acc + price
+    });
+
+    Some(t)
 }
 
 #[cfg(test)]
@@ -224,7 +324,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(1206));
     }
     #[test]
     fn test_calc_position() {
@@ -264,7 +364,6 @@ mod tests {
             position: Position { row: 0, col: 1 },
             borders: Default::default(),
             neighbors: Neighbors::default(),
-
         };
         plants.insert(p.position, p);
         let p = Plant {
@@ -281,7 +380,6 @@ mod tests {
             position: Position { row: 0, col: 0 },
             borders: Default::default(),
             neighbors: Neighbors::default(),
-
         };
 
         let n = get_neighbors(&p, &plants);
