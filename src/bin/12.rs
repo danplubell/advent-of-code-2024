@@ -76,7 +76,7 @@ fn get_neighbors(plant: &Plant, plants: &Plants) -> Neighbors {
 }
 fn is_species_neighbor(
     position: Option<Position>,
-    plant: &Plant,
+    species: char,
     plants: &Plants,
 ) -> Option<Position> {
     match position {
@@ -84,7 +84,7 @@ fn is_species_neighbor(
             let found_plant = plants.get(&p);
             match found_plant {
                 Some(v) => {
-                    if v.species == plant.species {
+                    if v.species == species {
                         return position;
                     }
                     None
@@ -105,10 +105,10 @@ fn is_species_neighbor(
 }
 fn get_species_neighbors(plant: &Plant, plants: &Plants) -> Neighbors {
     Neighbors {
-        top: is_species_neighbor(plant.neighbors.top, plant, plants),
-        right: is_species_neighbor(plant.neighbors.right, plant, plants),
-        bottom: is_species_neighbor(plant.neighbors.bottom, plant, plants),
-        left: is_species_neighbor(plant.neighbors.left, plant, plants),
+        top: is_species_neighbor(plant.neighbors.top, plant.species, plants),
+        right: is_species_neighbor(plant.neighbors.right, plant.species, plants),
+        bottom: is_species_neighbor(plant.neighbors.bottom, plant.species, plants),
+        left: is_species_neighbor(plant.neighbors.left, plant.species, plants),
     }
 }
 fn is_single_plant(neighbors: &Neighbors) -> bool {
@@ -198,6 +198,32 @@ fn get_corners(plant: &Plant, plants: &Plants) -> i32 {
     };
 //    println!("{:?} {} {:?}", plant.position,corners, n);
     corners
+}
+fn get_inside_corners(plant: &Plant, plants: &Plants) -> bool {
+    //4 cases
+    //3 members
+    //get 3 neighbors
+    let neighbors = get_species_neighbors(plant, plants);
+    //get the position to check
+    let check_position = calc_position((1,1), plant.position);
+    let case_a_position = is_species_neighbor(check_position, plant.species, plants);
+    if case_a_position.is_some() && neighbors.bottom.is_some() && neighbors.right.is_some(){
+        
+    }
+
+    let check_position = calc_position((1,-1), plant.position);
+    let case_b_position = is_species_neighbor(check_position, plant.species, plants);
+    if case_b_position.is_some() && neighbors.left.is_some() && neighbors.bottom.is_some(){}
+
+    let check_position = calc_position((-1,1), plant.position);
+    let case_c_position = is_species_neighbor(check_position, plant.species, plants);
+    if case_c_position.is_some() && neighbors.top.is_some() && neighbors.right.is_some(){}
+    
+    let check_position = calc_position((-1,-1), plant.position);
+    let case_d_position = is_species_neighbor(check_position, plant.species, plants);
+    if case_d_position.is_some() && neighbors.left.is_some() && neighbors.top.is_some(){}
+
+    false
 }
 
 pub fn part_one(input: &str) -> Option<i32> {
