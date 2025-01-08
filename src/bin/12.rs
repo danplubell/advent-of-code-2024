@@ -202,15 +202,21 @@ fn get_corners(plant: &Plant, plants: &Plants) -> i32 {
 fn get_inside_corners(plant: &Plant, plants: &Plants) -> i32 {
     //4 cases
     //3 members
-    //get 3 neighbors
+    //get species neighbors
     let neighbors = get_species_neighbors(plant, plants);
-    //get the position to check
+    
+    //get the position to check, this is the cell at a diagonal to the target cell
     let check_position = calc_position((1,1), plant.position);
+    // check to see if it is a species neighbor
     let case_a_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_a_position.is_some() && neighbors.bottom.is_some() && neighbors.right.is_some() {
+    // it isn't a species neighbor
+    if case_a_position.is_none() && neighbors.bottom.is_some() && neighbors.right.is_some() {
+        // get bottom and right neighbor
         let bottom_n = plants.get(&neighbors.bottom.unwrap()).unwrap();
         let right_n = plants.get(&neighbors.right.unwrap()).unwrap();
+        // check to see if the right neighbor of the bottom neighbor is the same species
         let bottom_n_species = is_species_neighbor(bottom_n.neighbors.right,plant.species,plants);
+        // check to see if the bottom neighbor of the right neighbor is the same species
         let right_n_species = is_species_neighbor(right_n.neighbors.bottom, plant.species, plants);
         if bottom_n_species.is_none() && right_n_species.is_none() {
             return 1
@@ -219,25 +225,27 @@ fn get_inside_corners(plant: &Plant, plants: &Plants) -> i32 {
 
     let check_position = calc_position((1,-1), plant.position);
     let case_b_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_b_position.is_some() && neighbors.left.is_some() && neighbors.bottom.is_some(){
+    if case_b_position.is_none() && neighbors.left.is_some() && neighbors.bottom.is_some(){
         let bottom_n = plants.get(&neighbors.bottom.unwrap()).unwrap();
-        let left_n = plants.get(&neighbors.right.unwrap()).unwrap();
-        let bottom_n_species = is_species_neighbor(bottom_n.neighbors.right,plant.species,plants);
+        let left_n = plants.get(&neighbors.left.unwrap()).unwrap();
+        let bottom_n_species = is_species_neighbor(bottom_n.neighbors.left,plant.species,plants);
         let left_n_species = is_species_neighbor(left_n.neighbors.bottom, plant.species, plants);
         if bottom_n_species.is_none() && left_n_species.is_none() {
             return 1
         };
 
     }
-
+/*
     let check_position = calc_position((-1,1), plant.position);
     let case_c_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_c_position.is_some() && neighbors.top.is_some() && neighbors.right.is_some(){}
+    if case_c_position.is_none() && neighbors.top.is_some() && neighbors.right.is_some(){}
     
     let check_position = calc_position((-1,-1), plant.position);
     let case_d_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_d_position.is_some() && neighbors.left.is_some() && neighbors.top.is_some(){}
+    if case_d_position.is_none() && neighbors.left.is_some() && neighbors.top.is_some(){}
 
+
+ */
     0
 }
 
@@ -432,4 +440,133 @@ mod tests {
         };
         assert_eq!(n, expected);
     }
+    #[test]
+    fn test_get_inside_corners_a() {
+        let mut plants: Plants = Plants::new();
+        let anchor_pos = Position { row: 0, col: 0 };
+        let right_pos = Position { row: 0, col: 1 };
+        let bottom_pos = Position { row: 1, col: 0 };
+        let corner_pos = Position { row: 1, col: 1 };
+        // case a
+        let right_plant = Plant {
+            species: 'E',
+            region: None,
+            position: right_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: None,
+                bottom: Some(corner_pos),
+                left: Some(anchor_pos),
+            },
+        };
+        plants.insert(right_pos, right_plant);
+        let bottom_plant = Plant {
+            species: 'E',
+            region: None,
+            position: bottom_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(anchor_pos),
+                right: Some(corner_pos),
+                bottom: None,
+                left: None,
+            },
+        };
+        plants.insert(bottom_pos, bottom_plant);
+        let corner_plant = Plant {
+            species: 'X',
+            region: None,
+            position: corner_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(right_pos),
+                right: None,
+                bottom: None,
+                left: Some(bottom_pos),
+            },
+        };
+        let anchor_plant = Plant {
+            species:'E',
+            region: None,
+            position: anchor_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: Some(right_pos),
+                bottom: Some(bottom_pos),
+                left: None,
+            },
+        };
+        let a = anchor_plant.clone();
+        plants.insert(anchor_pos, a);
+
+        plants.insert(corner_plant.position, corner_plant);
+        assert_eq!(get_inside_corners(&anchor_plant, &plants), 1);
+    }
+    #[test]
+    fn test_get_inside_corners_b() {
+        let mut plants: Plants = Plants::new();
+        let anchor_pos = Position { row: 0, col: 1 };
+        let left_pos = Position { row: 0, col: 0 };
+        let bottom_pos = Position { row: 1, col: 1 };
+        let corner_pos = Position { row: 1, col: 0 };
+        // case a
+        let left_plant = Plant {
+            species: 'E',
+            region: None,
+            position: left_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: Some(anchor_pos),
+                bottom: Some(corner_pos),
+                left: None,
+            },
+        };
+        plants.insert(left_pos, left_plant);
+        let bottom_plant = Plant {
+            species: 'E',
+            region: None,
+            position: bottom_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(anchor_pos),
+                right: None,
+                bottom: None,
+                left: Some(corner_pos),
+            },
+        };
+        plants.insert(bottom_pos, bottom_plant);
+        let corner_plant = Plant {
+            species: 'X',
+            region: None,
+            position: corner_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(left_pos),
+                right: Some(bottom_pos),
+                bottom: None,
+                left: None,
+            },
+        };
+        let anchor_plant = Plant {
+            species:'E',
+            region: None,
+            position: anchor_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: None,
+                bottom: Some(bottom_pos),
+                left: Some(left_pos),
+            },
+        };
+        let a = anchor_plant.clone();
+        plants.insert(anchor_pos, a);
+
+        plants.insert(corner_plant.position, corner_plant);
+        assert_eq!(get_inside_corners(&anchor_plant, &plants), 1);
+    }
+
 }
