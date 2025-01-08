@@ -182,7 +182,7 @@ fn get_corners(plant: &Plant, plants: &Plants) -> i32 {
         neighbors.bottom,
         neighbors.left,
     ];
-    println!("plan: {:?} {:?}",plant.position, plant.neighbors);
+//    println!("plan: {:?} {:?}",plant.position, plant.neighbors);
     let corners = match n {
         [None, None, None, None] => 4, // 4 corners
         [None, None, Some(_), Some(_)] => 1, // top, right and inside corner
@@ -200,6 +200,7 @@ fn get_corners(plant: &Plant, plants: &Plants) -> i32 {
     corners
 }
 fn get_inside_corners(plant: &Plant, plants: &Plants) -> i32 {
+    let mut total = 0;
     //4 cases
     //3 members
     //get species neighbors
@@ -219,7 +220,7 @@ fn get_inside_corners(plant: &Plant, plants: &Plants) -> i32 {
         // check to see if the bottom neighbor of the right neighbor is the same species
         let right_n_species = is_species_neighbor(right_n.neighbors.bottom, plant.species, plants);
         if bottom_n_species.is_none() && right_n_species.is_none() {
-            return 1
+            total+= 1;
         };
     };
 
@@ -231,22 +232,37 @@ fn get_inside_corners(plant: &Plant, plants: &Plants) -> i32 {
         let bottom_n_species = is_species_neighbor(bottom_n.neighbors.left,plant.species,plants);
         let left_n_species = is_species_neighbor(left_n.neighbors.bottom, plant.species, plants);
         if bottom_n_species.is_none() && left_n_species.is_none() {
-            return 1
+            total+= 1;
         };
 
     }
-/*
+
     let check_position = calc_position((-1,1), plant.position);
     let case_c_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_c_position.is_none() && neighbors.top.is_some() && neighbors.right.is_some(){}
+    if case_c_position.is_none() && neighbors.top.is_some() && neighbors.right.is_some(){
+        let top_n = plants.get(&neighbors.top.unwrap()).unwrap();
+        let right_n = plants.get(&neighbors.right.unwrap()).unwrap();
+        let right_n_species = is_species_neighbor(top_n.neighbors.right,plant.species,plants);
+        let top_n_species = is_species_neighbor(right_n.neighbors.top, plant.species, plants);
+        if top_n_species.is_none() && right_n_species.is_none() {
+            total+= 1;
+        };
+
+    }
     
     let check_position = calc_position((-1,-1), plant.position);
     let case_d_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_d_position.is_none() && neighbors.left.is_some() && neighbors.top.is_some(){}
+    if case_d_position.is_none() && neighbors.left.is_some() && neighbors.top.is_some(){
+        let top_n = plants.get(&neighbors.top.unwrap()).unwrap();
+        let left_n = plants.get(&neighbors.left.unwrap()).unwrap();
+        let left_n_species = is_species_neighbor(top_n.neighbors.left,plant.species,plants);
+        let top_n_species = is_species_neighbor(left_n.neighbors.top, plant.species, plants);
+        if top_n_species.is_none() && left_n_species.is_none() {
+            total+= 1;
+        };
 
-
- */
-    0
+    }
+    total
 }
 
 pub fn part_one(input: &str) -> Option<i32> {
@@ -294,12 +310,14 @@ pub fn part_one(input: &str) -> Option<i32> {
             regions.insert(plant_region, region);
       //  }
     });
+    /*
     let t = regions.iter().fold(0, |acc, (_, r)| {
         let price = r.area * r.perimeter;
         acc + price
     });
+    */
     let t = regions.iter().fold(0, |acc, (_, r)| {
-        let price = r.area * r.perimeter;
+        let price = r.area * r.corners;
         acc + price
     });
 
@@ -348,11 +366,16 @@ pub fn part_two(input: &str) -> Option<i32> {
             region.area += 1;
             region.perimeter += get_perimeter(v, &plants_clone);
             region.corners += get_corners(v, &plants_clone);
+            let inside_corners = get_inside_corners(v, &plants_clone);
+           // if inside_corners > 0{
+           //     println!("inside corners: {:?}", v);
+           // }
+            region.corners += inside_corners;
             regions.insert(plant_region, region);
         }
     });
     let t = regions.iter().fold(0, |acc, (_, r)| {
-        println!("region: {} {}",r.area, r.corners);
+       // println!("region: {} {}",r.area, r.corners);
         let price = r.area * r.corners;
         acc + price
     });
@@ -579,7 +602,7 @@ mod tests {
         let right_plant = Plant {
             species: 'E',
             region: None,
-            position: left_pos,
+            position: right_pos,
             borders: Default::default(),
             neighbors: Neighbors {
                 top: None,
@@ -588,11 +611,11 @@ mod tests {
                 left: None,
             },
         };
-        plants.insert(left_pos, left_plant);
-        let bottom_plant = Plant {
+        plants.insert(right_pos, right_plant);
+        let top_plant = Plant {
             species: 'E',
             region: None,
-            position: bottom_pos,
+            position: top_pos,
             borders: Default::default(),
             neighbors: Neighbors {
                 top: Some(anchor_pos),
@@ -601,15 +624,15 @@ mod tests {
                 left: Some(corner_pos),
             },
         };
-        plants.insert(bottom_pos, bottom_plant);
+        plants.insert(top_pos, top_plant);
         let corner_plant = Plant {
             species: 'X',
             region: None,
             position: corner_pos,
             borders: Default::default(),
             neighbors: Neighbors {
-                top: Some(left_pos),
-                right: Some(bottom_pos),
+                top: Some(right_pos),
+                right: Some(top_pos),
                 bottom: None,
                 left: None,
             },
@@ -620,9 +643,74 @@ mod tests {
             position: anchor_pos,
             borders: Default::default(),
             neighbors: Neighbors {
+                top: Some(top_pos),
+                right: Some(right_pos),
+                bottom: None,
+                left: None,
+            },
+        };
+        let a = anchor_plant.clone();
+        plants.insert(anchor_pos, a);
+
+        plants.insert(corner_plant.position, corner_plant);
+        assert_eq!(get_inside_corners(&anchor_plant, &plants), 1);
+    }
+
+    #[test]
+    fn test_get_inside_corners_d() {
+        let mut plants: Plants = Plants::new();
+        let anchor_pos = Position { row: 1, col: 1 };
+        let left_pos = Position { row: 1, col: 0 };
+        let top_pos = Position { row: 0, col: 1 };
+        let corner_pos = Position { row: 0, col: 0 };
+        // case a
+        let left_plant = Plant {
+            species: 'E',
+            region: None,
+            position: left_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(corner_pos),
+                right: Some(anchor_pos),
+                bottom: None,
+                left: None,
+            },
+        };
+        plants.insert(left_pos, left_plant);
+        let top_plant = Plant {
+            species: 'E',
+            region: None,
+            position: top_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
                 top: None,
                 right: None,
-                bottom: Some(bottom_pos),
+                bottom: Some(anchor_pos),
+                left: Some(corner_pos),
+            },
+        };
+        plants.insert(top_pos, top_plant);
+        let corner_plant = Plant {
+            species: 'X',
+            region: None,
+            position: corner_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: Some(top_pos),
+                bottom: Some(left_pos),
+                left: None,
+            },
+        };
+        let anchor_plant = Plant {
+            species:'E',
+            region: None,
+            position: anchor_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(top_pos),
+                right: None,
+                bottom: None,
                 left: Some(left_pos),
             },
         };
