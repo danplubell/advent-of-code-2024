@@ -199,7 +199,7 @@ fn get_corners(plant: &Plant, plants: &Plants) -> i32 {
 //    println!("{:?} {} {:?}", plant.position,corners, n);
     corners
 }
-fn get_inside_corners(plant: &Plant, plants: &Plants) -> bool {
+fn get_inside_corners(plant: &Plant, plants: &Plants) -> i32 {
     //4 cases
     //3 members
     //get 3 neighbors
@@ -207,13 +207,28 @@ fn get_inside_corners(plant: &Plant, plants: &Plants) -> bool {
     //get the position to check
     let check_position = calc_position((1,1), plant.position);
     let case_a_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_a_position.is_some() && neighbors.bottom.is_some() && neighbors.right.is_some(){
-        
-    }
+    if case_a_position.is_some() && neighbors.bottom.is_some() && neighbors.right.is_some() {
+        let bottom_n = plants.get(&neighbors.bottom.unwrap()).unwrap();
+        let right_n = plants.get(&neighbors.right.unwrap()).unwrap();
+        let bottom_n_species = is_species_neighbor(bottom_n.neighbors.right,plant.species,plants);
+        let right_n_species = is_species_neighbor(right_n.neighbors.bottom, plant.species, plants);
+        if bottom_n_species.is_none() && right_n_species.is_none() {
+            return 1
+        };
+    };
 
     let check_position = calc_position((1,-1), plant.position);
     let case_b_position = is_species_neighbor(check_position, plant.species, plants);
-    if case_b_position.is_some() && neighbors.left.is_some() && neighbors.bottom.is_some(){}
+    if case_b_position.is_some() && neighbors.left.is_some() && neighbors.bottom.is_some(){
+        let bottom_n = plants.get(&neighbors.bottom.unwrap()).unwrap();
+        let left_n = plants.get(&neighbors.right.unwrap()).unwrap();
+        let bottom_n_species = is_species_neighbor(bottom_n.neighbors.right,plant.species,plants);
+        let left_n_species = is_species_neighbor(left_n.neighbors.bottom, plant.species, plants);
+        if bottom_n_species.is_none() && left_n_species.is_none() {
+            return 1
+        };
+
+    }
 
     let check_position = calc_position((-1,1), plant.position);
     let case_c_position = is_species_neighbor(check_position, plant.species, plants);
@@ -223,7 +238,7 @@ fn get_inside_corners(plant: &Plant, plants: &Plants) -> bool {
     let case_d_position = is_species_neighbor(check_position, plant.species, plants);
     if case_d_position.is_some() && neighbors.left.is_some() && neighbors.top.is_some(){}
 
-    false
+    0
 }
 
 pub fn part_one(input: &str) -> Option<i32> {
