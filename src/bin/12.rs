@@ -568,5 +568,69 @@ mod tests {
         plants.insert(corner_plant.position, corner_plant);
         assert_eq!(get_inside_corners(&anchor_plant, &plants), 1);
     }
+    #[test]
+    fn test_get_inside_corners_c() {
+        let mut plants: Plants = Plants::new();
+        let anchor_pos = Position { row: 1, col: 0 };
+        let right_pos = Position { row: 1, col: 1 };
+        let top_pos = Position { row: 0, col: 0 };
+        let corner_pos = Position { row: 0, col: 1 };
+        // case a
+        let right_plant = Plant {
+            species: 'E',
+            region: None,
+            position: left_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: Some(anchor_pos),
+                bottom: Some(corner_pos),
+                left: None,
+            },
+        };
+        plants.insert(left_pos, left_plant);
+        let bottom_plant = Plant {
+            species: 'E',
+            region: None,
+            position: bottom_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(anchor_pos),
+                right: None,
+                bottom: None,
+                left: Some(corner_pos),
+            },
+        };
+        plants.insert(bottom_pos, bottom_plant);
+        let corner_plant = Plant {
+            species: 'X',
+            region: None,
+            position: corner_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: Some(left_pos),
+                right: Some(bottom_pos),
+                bottom: None,
+                left: None,
+            },
+        };
+        let anchor_plant = Plant {
+            species:'E',
+            region: None,
+            position: anchor_pos,
+            borders: Default::default(),
+            neighbors: Neighbors {
+                top: None,
+                right: None,
+                bottom: Some(bottom_pos),
+                left: Some(left_pos),
+            },
+        };
+        let a = anchor_plant.clone();
+        plants.insert(anchor_pos, a);
+
+        plants.insert(corner_plant.position, corner_plant);
+        assert_eq!(get_inside_corners(&anchor_plant, &plants), 1);
+    }
 
 }
