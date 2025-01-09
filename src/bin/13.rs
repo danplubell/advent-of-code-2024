@@ -2,8 +2,8 @@ use itertools::Itertools;
 
 advent_of_code::solution!(13);
 
-fn find_match(target: i32, a: i32, b: i32) -> Vec<(i32, i32)> {
-    let mut list: Vec<(i32, i32)> = vec![];
+fn find_match(target: i64, a: i64, b: i64) -> Vec<(i64, i64)> {
+    let mut list: Vec<(i64, i64)> = vec![];
     for i in (0..=target).rev() {
         if i % a == 0 {
             for j in 0..=target {
@@ -20,13 +20,13 @@ fn find_match(target: i32, a: i32, b: i32) -> Vec<(i32, i32)> {
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Button {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Prize {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Claw {
@@ -57,14 +57,14 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(total as u32)
 }
 
-fn get_cost(button_a: Button, button_b: Button, prize: Prize) -> i32 {
+fn get_cost(button_a: Button, button_b: Button, prize: Prize) -> i64 {
     let x_matches =  find_match(prize.x, button_a.x, button_b.x);
     let y_matches = find_match(prize.y, button_a.y, button_b.y);
 //    println!("x_matches: {:?}, y_matches: {:?}", x_matches, y_matches);
     if x_matches.is_empty() || y_matches.is_empty() {
         return 0;
     }
-    let mut common_matches:Vec<(i32,i32)> = vec![];
+    let mut common_matches:Vec<(i64,i64)> = vec![];
     let mut total_cost = 0;
     for m in x_matches {
         let found = y_matches.contains(&m);
@@ -88,7 +88,7 @@ fn parse_prize(prize_str: &str) -> Prize {
 
 }
 
-fn parse_claw(part_str: &str) -> (i32,i32) {
+fn parse_claw(part_str: &str) -> (i64,i64) {
     let tokens = part_str
         .split(' ')
         .filter(|x| x.starts_with('X') || x.starts_with('Y'))
@@ -96,8 +96,8 @@ fn parse_claw(part_str: &str) -> (i32,i32) {
     let x_y: Vec<_> = tokens.iter().map(|t|{
         t.chars().filter(|&c| c.is_ascii_digit()).collect::<String>()
     }).collect();
-    let x = x_y[0].parse::<i32>().unwrap();
-    let y = x_y[1].parse::<i32>().unwrap();
+    let x = x_y[0].parse::<i64>().unwrap();
+    let y = x_y[1].parse::<i64>().unwrap();
     (x, y)
 }
 fn parse_button(button_str: &str) -> Button {
@@ -107,8 +107,31 @@ fn parse_button(button_str: &str) -> Button {
         y: parts.1,
     }
 }
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<i32> {
+    // build the list of claw machines
+    let mut total = 0;
+    for chunk in &input.lines().chunks(4) {
+        let claw_parts = chunk.collect::<Vec<&str>>();
+        let a: Button = parse_button(claw_parts[0]);
+        let b: Button = parse_button(claw_parts[1]);
+        let prize_raw: Prize = parse_prize(claw_parts[2]);
+        let prize = Prize {
+            x: prize_raw.x + 10000000000000,
+            y: prize_raw.y + 1000000000000,
+        };
+        //make buttonA
+        //make buttonB
+        //make prize
+        total += get_cost(a, b, prize);
+    }
+    // for each claw machine get a list of x tuples that match that total the x value
+    // tuple is (a clicks, b clicks)
+    // for each claw machine get a list of y tuples that match that total the y value
+    // if y or x is empty then continue
+    // look for an x tuple that matches a y tuple
+    // calculate the cost of tokens a_clicks * 3, b_clicks * 1
+    // add cost to total
+    Some(total as i32)
 }
 
 #[cfg(test)]
