@@ -61,6 +61,8 @@ fn get_cost(button_a: Button, button_b: Button, prize: Prize) -> i64 {
     let x_matches =  find_match(prize.x, button_a.x, button_b.x);
     let y_matches = find_match(prize.y, button_a.y, button_b.y);
 //    println!("x_matches: {:?}, y_matches: {:?}", x_matches, y_matches);
+    println!("done");
+    /*
     if x_matches.is_empty() || y_matches.is_empty() {
         return 0;
     }
@@ -76,7 +78,10 @@ fn get_cost(button_a: Button, button_b: Button, prize: Prize) -> i64 {
             }
         }
     }
-    total_cost
+    
+     */
+    //total_cost
+    0
 }
 
 fn parse_prize(prize_str: &str) -> Prize {
@@ -107,7 +112,7 @@ fn parse_button(button_str: &str) -> Button {
         y: parts.1,
     }
 }
-pub fn part_two(input: &str) -> Option<i32> {
+pub fn part_two(input: &str) -> Option<i64> {
     // build the list of claw machines
     let mut total = 0;
     for chunk in &input.lines().chunks(4) {
@@ -117,7 +122,7 @@ pub fn part_two(input: &str) -> Option<i32> {
         let prize_raw: Prize = parse_prize(claw_parts[2]);
         let prize = Prize {
             x: prize_raw.x + 10000000000000,
-            y: prize_raw.y + 1000000000000,
+            y: prize_raw.y + 10000000000000,
         };
         //make buttonA
         //make buttonB
@@ -131,7 +136,7 @@ pub fn part_two(input: &str) -> Option<i32> {
     // look for an x tuple that matches a y tuple
     // calculate the cost of tokens a_clicks * 3, b_clicks * 1
     // add cost to total
-    Some(total as i32)
+    Some(total)
 }
 
 #[cfg(test)]
@@ -163,5 +168,14 @@ mod tests {
         assert_eq!(prize.x, 7870);
         assert_eq!(prize.y, 6450);
     }
-
+    #[test]
+    fn test_find_match() {
+        let mut v: Vec<i64> = vec![];
+        for i in 0..=10000000000000_i64 {
+            if i%22 == 0 {
+                v.push(i);
+            }
+        }
+        println!("{:?}", v.len());
+    }
 }
