@@ -122,6 +122,63 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let width = 11;//101;
+    let height = 7;//103;
+    let grid = Grid::new(width, height).unwrap();
+    // get all robots
+    let robots: Vec<_> = input.lines().map(get_robot).collect();
+    // for all robots calculate normalized position
+    for i in 0..100{
+        println!("time: {i}");
+        println!();
+        let normalized_positions: Vec<_> = robots
+            .iter()
+            .map(|r| {
+                let initial_pos = Vector::new_2d(r.position.x, r.position.y);
+                let velocity = Vector::new_2d(r.velocity.x, r.velocity.y);
+                let time = i as f64;
+
+                match calculate_position(&initial_pos, &velocity, time, &grid) {
+                    Ok(result) => {
+                        Some(result.grid_cell)
+                    }
+                    Err(e) => {
+                        println!("Error: {}", e);
+                        None
+                    }
+                }
+            })
+            .collect();
+        let mut grid_cell_map: HashMap<GridCell, i32> = HashMap::new();
+        for p in normalized_positions.iter() {
+            let position = p.clone().unwrap();
+            let map_grid_cell = grid_cell_map.get(&position);
+            let count = match map_grid_cell {
+                Some(t) => {
+                    t + 1
+                },
+                None=> 1
+            };
+            grid_cell_map.insert(position, count);
+        }
+
+        for i in 0..height {
+            for j in 0..width {
+                let gc = GridCell {
+                    x: j,
+                    y: i,
+                };
+                let c = grid_cell_map.get(&gc);
+                let symbol = match c {
+                    Some(x) => 'X',
+                    _=> '.'
+                };
+                print!("{symbol}")
+            }
+            println!();
+        }
+
+    }
     None
 }
 
