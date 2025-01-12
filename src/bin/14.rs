@@ -122,13 +122,13 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let width = 11;//101;
-    let height = 7;//103;
+    let width = 101;
+    let height = 103;
     let grid = Grid::new(width, height).unwrap();
     // get all robots
     let robots: Vec<_> = input.lines().map(get_robot).collect();
     // for all robots calculate normalized position
-    for i in 0..100{
+    for i in 0..17174{
         println!("time: {i}");
         println!();
         let normalized_positions: Vec<_> = robots
