@@ -32,3 +32,4 @@ tinyjson = "2.5.1"
 # Solution dependencies
 itertools = "0.14.0"
 rayon = "1.10.0"
+grid = "0.15.0"
