@@ -13,7 +13,27 @@ struct Position {
     row: usize,
     col: usize,
 }
+const NEIGHBOR_OFFSETS: [(i32, i32); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
+const UP:usize = 0;
+const RIGHT:usize = 1;
+const BOTTOM:usize = 2;
+const LEFT:usize = 3;
+
+fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
+    Option::from(Position {
+        row: position.row.checked_add_signed(offset.0 as isize)?,
+        col: position.col.checked_add_signed(offset.1 as isize)?,
+    })
+}
+
 fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<char>) -> Position {
+    let offset = match direction {
+        Direction::Up => NEIGHBOR_OFFSETS[UP],
+        Direction::Right => NEIGHBOR_OFFSETS[RIGHT],
+        Direction::Left => NEIGHBOR_OFFSETS[LEFT],
+        Direction::Down => NEIGHBOR_OFFSETS[BOTTOM],
+    };
+    let next_robot_position = calc_position(offset, robot_location);
     match direction {
         Direction::Right => {
             let new_col = robot_location.col.checked_add(1);
