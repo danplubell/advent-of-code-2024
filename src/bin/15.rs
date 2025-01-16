@@ -32,9 +32,38 @@ fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<cha
         Direction::Right => NEIGHBOR_OFFSETS[RIGHT],
         Direction::Left => NEIGHBOR_OFFSETS[LEFT],
         Direction::Down => NEIGHBOR_OFFSETS[BOTTOM],
+        _ => (0,0)
     };
     let next_robot_position = calc_position(offset, robot_location);
-    match direction {
+    if let Some(neighbor_position) = next_robot_position {
+        let neighbor_value = grid.get_mut(neighbor_position.row, neighbor_position.col);
+        match neighbor_value {
+            // ran into wall
+            Some('#')  => robot_location,
+            // move boxes
+            Some('O') => {
+                robot_location
+            },
+            _ => {
+                // Now we can do the mutations one at a time
+                // set the old robot location of empty cell '.'
+                if let Some(current) = grid.get_mut(robot_location.row, robot_location.col) {
+                    *current = '.';
+                }
+                // set robot at new location
+                if let Some(next) = grid.get_mut(neighbor_position.row, neighbor_position.col) {
+                    *next = '@';
+                }
+                Position {
+                    row: neighbor_position.row,
+                    col: neighbor_position.col,
+                }
+            }
+        }
+    };
+    robot_location
+}
+/*    match direction {
         Direction::Right => {
             let new_col = robot_location.col.checked_add(1);
 
@@ -71,6 +100,8 @@ fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<cha
         Direction::Down => robot_location,
         Direction::NoDirection => robot_location,
     }
+    
+ */
 }
 /*
 fn make_move1(direction: Direction, robot_location: Position, grid: &mut Grid<char>) -> Position {
