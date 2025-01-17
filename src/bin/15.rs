@@ -253,6 +253,7 @@ mod tests {
     }
     #[test]
     fn test_move_boxes(){
-        let mut grid: Grid<char> = Grid::new(8, 8);
+        let mut grid: Grid<char> = Grid::new(4, 4);
+        grid.insert_row(vec!['#','O','.','#'];
     }
 }
