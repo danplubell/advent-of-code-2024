@@ -26,6 +26,19 @@ fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
     })
 }
 
+fn move_robot(current_position: Position, next_position: Position, grid: &mut Grid<char>) {
+    // Now we can do the mutations one at a time, move the robot
+    // set the previous location to empty '.'
+    if let Some(current) = grid.get_mut(current_position.row, current_position.col) {
+        *current = '.';
+    }
+
+    // set the robot to the next location
+    if let Some(next) = grid.get_mut(next_position.row, next_position.col) {
+        *next = '@';
+    }
+
+}
 fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<char>) -> Position {
     let offset = match direction {
         Direction::Up => NEIGHBOR_OFFSETS[UP],
@@ -42,11 +55,27 @@ fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<cha
             Some('#') => robot_location,
             //move boxes if possible
             Some('O') => {
-                robot_location
-//                move_boxes(grid, offset, p);
-//                make_move(direction, robot_location, grid)
+                
+                let open_position = move_boxes(grid, offset, p);
+                if open_position.is_some() {
+                    move_robot(robot_location, p, grid);
+                    Position {
+                        row: p.row,
+                        col: p.col,
+                    }
+
+                } else {
+                    robot_location
+                }
             }
-            _ => {
+            Some('.') => {
+                move_robot(robot_location,p, grid);
+                Position {
+                    row: p.row,
+                    col: p.col,
+                }
+
+                /*
                 // Now we can do the mutations one at a time, move the robot
                 // set the previous location to empty '.'
                 if let Some(current) = grid.get_mut(robot_location.row, robot_location.col) {
@@ -57,11 +86,10 @@ fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<cha
                 if let Some(next) = grid.get_mut(p.row, p.col) {
                     *next = '@';
                 }
-                Position {
-                    row: p.row,
-                    col: p.col,
-                }
+                
+                 */
             }
+            _=> robot_location
         };
     }
     robot_location
@@ -184,9 +212,9 @@ fn make_move1(direction: Direction, robot_location: Position, grid: &mut Grid<ch
 }
 
  */
-pub fn part_one(input: &str) -> Option<u32> {
-    let mut grid: Grid<char> = Grid::new(8, 8);
-
+pub fn part_one(input: &str) -> Option<usize> {
+    let line_length = input.lines().next().unwrap().len();
+    let mut grid: Grid<char> = Grid::new(line_length, line_length);
     let mut robot_location: Position = Position { row: 0, col: 0 };
     input.lines().enumerate().for_each(|(row, l)| {
         if l.starts_with("#") {
@@ -200,9 +228,9 @@ pub fn part_one(input: &str) -> Option<u32> {
         }
     });
 
-    for i in 0..8 {
+    for i in 0..line_length {
         println!();
-        for j in 0..8 {
+        for j in 0..line_length {
             let c = grid.get(i, j).unwrap();
             print!("{}", c);
         }
@@ -219,9 +247,9 @@ pub fn part_one(input: &str) -> Option<u32> {
                 };
                 println!("robot_location: {:?} {:?}", robot_location, direction);
                 robot_location = make_move(direction, robot_location, &mut grid);
-                for i in 0..8 {
+                for i in 0..line_length {
                     println!();
-                    for j in 0..8 {
+                    for j in 0..line_length {
                         let c = grid.get(i, j).unwrap();
                         print!("{}", c);
                     }
@@ -229,7 +257,18 @@ pub fn part_one(input: &str) -> Option<u32> {
             })
         }
     });
-    None
+    let mut total = 0;
+    for i in 0..line_length {
+        println!();
+        for j in 0..line_length {
+            let c = grid.get(i, j).unwrap();
+            if *c == 'O' {
+                total += i*100 + j;
+            }
+        }
+    }
+    
+    Some(total)
 }
 
 
@@ -244,7 +283,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result,Some(10092));
     }
 
     #[test]
