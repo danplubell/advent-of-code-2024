@@ -60,10 +60,10 @@ fn calculate_reverse_next_points((e1, n1): (i64, i64), (e2, n2): (i64, i64)) -> 
 
 
 fn find_antinodes(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:i64) ->usize {
-//    println!("{:?}", ant); 
+//    println!("{:?}", ant);
     let mut antinode_set: HashSet<(i64, i64)> = HashSet::new();
     ant.iter().for_each(|(k, v)| {
-       
+
         // go through each pair in vector
         v.iter().for_each(|(r, c)| {
             // match up with all other pairs in vector
@@ -91,7 +91,7 @@ fn find_antinodes(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:
 }
 
 fn find_antinodes2(ant: HashMap<char, Vec<(usize, usize)>>, max_row:i64, max_col:i64) ->i64 {
-    
+
     let mut final_set:HashSet<(i64,i64)> = HashSet::new();
     ant.iter().for_each(|(k, v)| {
         if !v.is_empty() {
@@ -172,6 +172,8 @@ pub fn part_two(input: &str) -> Option<i64> {
     // now look for antinodes
     Some(find_antinodes2(ant,max_row as i64, max_col as i64, ))
 
+pub fn part_two(input: &str) -> Option<u32> {
+    None
 }
 
 #[cfg(test)]
@@ -189,7 +191,7 @@ mod tests {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(34));
     }
-    
+
     #[test]
     fn test_next_points() {
         let mut nodes:HashSet<(i64,i64)> = HashSet::new();
@@ -204,7 +206,7 @@ mod tests {
             nodes.insert(n);
             a = b;
             b = n;
-            
+
         }
         loop {
             let n =  calculate_reverse_next_points(a, b);
