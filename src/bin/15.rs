@@ -42,8 +42,9 @@ fn make_move(direction: Direction, robot_location: Position, grid: &mut Grid<cha
             Some('#') => robot_location,
             //move boxes if possible
             Some('O') => {
-                move_boxes(grid, offset, p);
-                make_move(direction, robot_location, grid)
+                robot_location
+//                move_boxes(grid, offset, p);
+//                make_move(direction, robot_location, grid)
             }
             _ => {
                 // Now we can do the mutations one at a time, move the robot
@@ -213,11 +214,11 @@ pub fn part_one(input: &str) -> Option<u32> {
                     '<' => Direction::Left,
                     '>' => Direction::Right,
                     '^' => Direction::Up,
-                    'V' => Direction::Down,
+                    'v' => Direction::Down,
                     _ => Direction::NoDirection,
                 };
+                println!("robot_location: {:?} {:?}", robot_location, direction);
                 robot_location = make_move(direction, robot_location, &mut grid);
-                println!("robot_location: {:?}", robot_location);
                 for i in 0..8 {
                     println!();
                     for j in 0..8 {
@@ -254,6 +255,10 @@ mod tests {
     #[test]
     fn test_move_boxes(){
         let mut grid: Grid<char> = Grid::new(4, 4);
-        grid.insert_row(vec!['#','O','.','#'];
+        grid.insert_row(0,vec!['#','O','.','#']);
+    }
+    #[test]
+    fn test_make_move(){
+        
     }
 }
