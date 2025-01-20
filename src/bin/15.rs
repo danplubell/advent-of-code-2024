@@ -192,40 +192,6 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(total)
 }
 
-fn move_boxes2(grid: &mut Grid<char>, offset: (i32, i32), position: Position) -> Option<Position> {
-    let next_robot_position = calc_position(offset, position);
-    if let Some(p) = next_robot_position {
-        let neighbor_value = grid.get(p.row, p.col);
-        return match neighbor_value {
-            Some('.') => {
-                // Now we can do the mutations one at a time, move the robot
-                // set the previous location to empty '.'
-                if let Some(current) = grid.get_mut(position.row, position.col) {
-                    *current = '.';
-                }
-
-                // set the box to the next location
-                if let Some(next) = grid.get_mut(p.row, p.col) {
-                    *next = 'O';
-                }
-                Some(Position {
-                    row: position.row,
-                    col: position.col,
-                }) // return the position that opened up
-            }
-            Some('O') => {
-                // check next box
-                let opened_position = crate::move_boxes(grid, offset, p);
-                if let Some(current) = opened_position {
-                    return crate::move_boxes(grid, offset, position);
-                }
-                None
-            }
-            _ => None,
-        };
-    }
-    None
-}
 
 fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<char>) -> Position {
     let offset = match direction {
@@ -358,6 +324,14 @@ fn move_boxes_horz(
                     row: l.row,
                     col: l.col,
                 })
+            }
+            // another box
+            Some('[') | Some(']') => {
+                let new_location = move_boxes_horz(grid, offset, Position { row: r.row, col: r.col});
+                if let Some(np)= new_location {
+                    return move_boxes_horz(grid, offset, Position { row: np.row, col: np.col});
+                }
+                None
             }
             _=> None
         };
@@ -531,5 +505,13 @@ mod tests {
         println!("{:?}", p);
         let p = calc_position_horz((0, -1), Position { row: 0, col: 2 });
         println!("{:?}", p);
+    }
+    
+    #[test]
+    fn test_move_boxes_horz() {
+        let mut grid: Grid<char> = Grid::new(1, 9);
+        grid.insert_row(0, vec!['#', '#', '[', ']', '[',']','.', '#', '#']);
+        move_boxes_horz(&mut grid, (0, 1), Position {row: 0, col: 2});
+        println!("{:?}", grid);
     }
 }
