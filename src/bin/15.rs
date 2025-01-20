@@ -21,6 +21,11 @@ const RIGHT: usize = 1;
 const BOTTOM: usize = 2;
 const LEFT: usize = 3;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Box {
+    left: Position,
+    right: Position,
+}
 fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
     Option::from(Position {
         row: position.row.checked_add_signed(offset.0 as isize)?,
@@ -236,75 +241,127 @@ fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<ch
         return match neighbor_value {
             // hit a wall
             Some('#') => robot_location,
-            //move boxes if possible
-            Some('[') | Some(']')=> {
-                return match direction {
-                    Direction::Up | Direction::Down => {
-                        let open_position = move_boxes_vert(grid, offset, p);
-                        if open_position.is_some() {
-                            move_robot(robot_location, p, grid);
-                            Position {
-                                row: p.row,
-                                col: p.col,
-                            }
-                        } else {
-                            robot_location
-                        }
-                    },
-                    _ => {
-                        let open_position = move_boxes_horz(grid, offset, p);
-                        if open_position.is_some() {
-                            move_robot(robot_location, p, grid);
-                            Position {
-                                row: p.row,
-                                col: p.col,
-                            }
-                        } else {
-                            robot_location
-                        }
-                    }
-                }
-            }
             Some('.') => {
                 move_robot(robot_location, p, grid);
                 Position {
                     row: p.row,
                     col: p.col,
                 }
-
-                /*
-                // Now we can do the mutations one at a time, move the robot
-                // set the previous location to empty '.'
-                if let Some(current) = grid.get_mut(robot_location.row, robot_location.col) {
-                    *current = '.';
+            }
+            //move boxes if possible
+            Some(b) => {
+                if *b == '[' || *b == ']' {
+                    return match direction {
+                        Direction::Up | Direction::Down => {
+                            let open_position = move_boxes_vert(grid, offset, p);
+                            if open_position.is_some() {
+                                move_robot(robot_location, p, grid);
+                                Position {
+                                    row: p.row,
+                                    col: p.col,
+                                }
+                            } else {
+                                robot_location
+                            }
+                        }
+                        _ => {
+                            let open_position = move_boxes_horz(grid, offset, p);
+                            if open_position.is_some() {
+                                move_robot(robot_location, p, grid);
+                                Position {
+                                    row: p.row,
+                                    col: p.col,
+                                }
+                            } else {
+                                robot_location
+                            }
+                        }
+                    };
                 }
-
-                // set the robot to the next location
-                if let Some(next) = grid.get_mut(p.row, p.col) {
-                    *next = '@';
-                }
-
-                 */
+                robot_location
             }
             _ => robot_location,
         };
     }
     robot_location
 }
-fn calc_position_horz(offset: (i32, i32), position: Position) -> (Option<Position>,Option<Position>) {
-    let p1 = Option::from(Position {
-        row: position.row.checked_add_signed(offset.0 as isize)?,
-        col: position.col.checked_add_signed(offset.1 as isize)?,
-    });
-    let p2 = Option::from(Position {
-        row: position.row.checked_add_signed(offset.0 as isize)?,
-        col: position.col.checked_add_signed((offset.1 * 2) as isize)?,
-    });
-    (p1,p2)
+
+fn calc_position_horz(
+    offset: (i32, i32),
+    position: Position,
+) -> (Option<Position>, Option<Position>) {
+    let p1 = position
+        .row
+        .checked_add_signed(offset.0 as isize)
+        .and_then(|row| {
+            position
+                .col
+                .checked_add_signed(offset.1 as isize)
+                .map(|col| Position { row, col })
+        });
+    let p2 = position
+        .row
+        .checked_add_signed(offset.0 as isize)
+        .and_then(|row| {
+            position
+                .col
+                .checked_add_signed((offset.1 * 2) as isize)
+                .map(|col| Position { row, col })
+        });
+    (p1, p2)
 }
 
-fn move_boxes_horz(grid: &mut Grid<char>, offset: (i32, i32), position: Position) -> Option<Position> {
+fn move_box(grid: &mut Grid<char>, current_position: Box, new_position: Box) {
+    // set old position to .
+    if let Some(row) = grid.get_mut(current_position.right.row, current_position.right.col) {
+        *row = '.';
+    }
+    if let Some(col) = grid.get_mut(current_position.left.row, current_position.left.col) {
+        *col = '.';
+    }
+    if let Some(row) = grid.get_mut(new_position.right.row, new_position.right.col) {
+        *row = ']';
+    }
+    if let Some(col) = grid.get_mut(new_position.left.row, new_position.left.col) {
+        *col = '[';
+    }
+}
+fn move_boxes_horz(
+    grid: &mut Grid<char>,
+    offset: (i32, i32),
+    position: Position,
+) -> Option<Position> {
     let next_box_position = calc_position_horz(offset, position);
+    if let (Some(l), Some(r)) = next_box_position {
+        let neighbor_value = grid.get(r.row, r.col);
+        return match neighbor_value {
+            Some('.') => {
+                let next_box = Box {
+                    left: Position {
+                        row: l.row,
+                        col: l.col,
+                    },
+                    right: Position {
+                        row: r.row,
+                        col: r.col,
+                    },
+                };
+                let curr_box = Box {
+                    left: position,
+                    right: Position {
+                        row: position.row,
+                        col: position.col,
+                    },
+                };
+                move_box(grid, curr_box, next_box);
+                Some(Position {
+                    row: l.row,
+                    col: l.col,
+                })
+            }
+            _=> None
+        };
+    }
     /*
     if let Some(p) = next_box_position {
         let neighbor_value = grid.get(p.row, p.col);
@@ -336,13 +393,16 @@ fn move_boxes_horz(grid: &mut Grid<char>, offset: (i32, i32), position: Position
             _ => None,
         };
     }
-    
+
      */
     None
-
 }
 
-fn move_boxes_vert(grid: &mut Grid<char>, offset: (i32, i32), position: Position) -> Option<Position> {
+fn move_boxes_vert(
+    grid: &mut Grid<char>,
+    offset: (i32, i32),
+    position: Position,
+) -> Option<Position> {
     todo!()
 }
 
@@ -352,14 +412,15 @@ pub fn part_two(input: &str) -> Option<u32> {
     // expand map
     let new_map: Vec<_> = input
         .lines()
-        .filter(|l| l.starts_with("#")).map(|l| {
+        .filter(|l| l.starts_with("#"))
+        .map(|l| {
             let mut new_line = Vec::new();
             l.chars().for_each(|c| match c {
                 '@' => {
                     new_line.push('@');
                     new_line.push('.')
                 }
-                'O'=> {
+                'O' => {
                     new_line.push('[');
                     new_line.push(']');
                 }
@@ -375,25 +436,22 @@ pub fn part_two(input: &str) -> Option<u32> {
     println!("{:?}", new_map);
     grid_length = new_map.len();
     //find robot location
-    let mut robot_location= Position {
-        row: 0,
-        col: 0,
-    };
-    new_map.iter().enumerate().for_each(|(row,l)|{
-        l.iter().enumerate().for_each(|(col,c)|{
+    let mut robot_location = Position { row: 0, col: 0 };
+    new_map.iter().enumerate().for_each(|(row, l)| {
+        l.iter().enumerate().for_each(|(col, c)| {
             if *c == '@' {
-                robot_location = Position {
-                    row, col
-                }
+                robot_location = Position { row, col }
             }
         })
     });
 
     let mut grid: Grid<char> = Grid::new(grid_length, grid_width);
-    new_map.iter().enumerate().for_each(|(row,l)|{
-        l.iter().enumerate().for_each(|(col,c)|{
-           let gc = grid.get_mut(row,col);
-           if let Some(p) = gc { *p = *c }
+    new_map.iter().enumerate().for_each(|(row, l)| {
+        l.iter().enumerate().for_each(|(col, c)| {
+            let gc = grid.get_mut(row, col);
+            if let Some(p) = gc {
+                *p = *c
+            }
         })
     });
     /*
@@ -405,7 +463,7 @@ pub fn part_two(input: &str) -> Option<u32> {
             print!("{}",c)
         }
     }
-    
+
      */
     input.lines().enumerate().for_each(|(row, l)| {
         if !l.starts_with("#") {
@@ -453,5 +511,25 @@ mod tests {
         grid.insert_row(0, vec!['#', 'O', '.', '#']);
     }
     #[test]
-    fn test_make_move() {}
+    fn test_move_box() {
+        let mut grid: Grid<char> = Grid::new(7, 7);
+        grid.insert_row(0, vec!['#', '#', '[', ']', '.', '#', '#']);
+        let curr_pos = Box {
+            left: Position { row: 0, col: 2 },
+            right: Position { row: 0, col: 3 },
+        };
+        let new_pos = Box {
+            left: Position { row: 0, col: 3 },
+            right: Position { row: 0, col: 4 },
+        };
+        move_box(&mut grid, curr_pos, new_pos);
+        println!("{:?}", grid);
+    }
+    #[test]
+    fn test_calc_pos_horz() {
+        let p = calc_position_horz((0, 1), Position { row: 0, col: 1 });
+        println!("{:?}", p);
+        let p = calc_position_horz((0, -1), Position { row: 0, col: 2 });
+        println!("{:?}", p);
+    }
 }
