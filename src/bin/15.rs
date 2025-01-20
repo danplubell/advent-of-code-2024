@@ -264,32 +264,6 @@ fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<ch
                         }
                     }
                 }
-                /*
-                let open_position = move_boxes2(grid, offset, p);
-                if open_position.is_some() {
-                    move_robot(robot_location, p, grid);
-                    Position {
-                        row: p.row,
-                        col: p.col,
-                    }
-                } else {
-                    robot_location
-                }
-
-*/
-                /*
-                let open_position = move_boxes(grid, offset, p);
-                if open_position.is_some() {
-                    move_robot(robot_location, p, grid);
-                    Position {
-                        row: p.row,
-                        col: p.col,
-                    }
-                } else {
-                    robot_location
-                }
-                
-                 */
             }
             Some('.') => {
                 move_robot(robot_location, p, grid);
@@ -317,10 +291,22 @@ fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<ch
     }
     robot_location
 }
+fn calc_position_horz(offset: (i32, i32), position: Position) -> (Option<Position>,Option<Position>) {
+    let p1 = Option::from(Position {
+        row: position.row.checked_add_signed(offset.0 as isize)?,
+        col: position.col.checked_add_signed(offset.1 as isize)?,
+    });
+    let p2 = Option::from(Position {
+        row: position.row.checked_add_signed(offset.0 as isize)?,
+        col: position.col.checked_add_signed((offset.1 * 2) as isize)?,
+    });
+    (p1,p2)
+}
 
 fn move_boxes_horz(grid: &mut Grid<char>, offset: (i32, i32), position: Position) -> Option<Position> {
-    let next_robot_position = calc_position(offset, position);
-    if let Some(p) = next_robot_position {
+    let next_box_position = calc_position_horz(offset, position);
+    /*
+    if let Some(p) = next_box_position {
         let neighbor_value = grid.get(p.row, p.col);
         return match neighbor_value {
             Some('.') => {
@@ -350,6 +336,8 @@ fn move_boxes_horz(grid: &mut Grid<char>, offset: (i32, i32), position: Position
             _ => None,
         };
     }
+    
+     */
     None
 
 }
