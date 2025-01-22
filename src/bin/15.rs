@@ -373,39 +373,6 @@ fn move_boxes_horz(
             _ => None,
         };
     }
-    /*
-    if let Some(p) = next_box_position {
-        let neighbor_value = grid.get(p.row, p.col);
-        return match neighbor_value {
-            Some('.') => {
-                // Now we can do the mutations one at a time, move the robot
-                // set the previous location to empty '.'
-                if let Some(current) = grid.get_mut(position.row, position.col) {
-                    *current = '.';
-                }
-
-                // set the box to the next location
-                if let Some(next) = grid.get_mut(p.row, p.col) {
-                    *next = 'O';
-                }
-                Some(Position {
-                    row: position.row,
-                    col: position.col,
-                }) // return the position that opened up
-            }
-            Some('[') | Some(']') => {
-                // check next box
-                let opened_position = move_boxes(grid, offset, p);
-                if let Some(current) = opened_position {
-                    return move_boxes(grid, offset, position);
-                }
-                None
-            }
-            _ => None,
-        };
-    }
-
-     */
     None
 }
 
@@ -414,7 +381,11 @@ fn move_boxes_vert(
     offset: (i32, i32),
     position: Position,
 ) -> Option<Position> {
-    todo!()
+    let next_position = calc_position(offset,position);
+    Some(Position {
+        row: 0,
+        col: 0,
+    })
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
