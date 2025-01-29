@@ -375,13 +375,40 @@ fn move_boxes_horz(
     }
     None
 }
-
+fn get_box(grid: &Grid<char>, position: Position) -> Option<Box> {
+    let char_at_pos = grid.get(position.row, position.col).unwrap();
+    
+    let new_box = match char_at_pos {
+        ']' => {
+            Some(Box {
+                left: Position { row: position.row, col: position.col - 1 },
+                right: position,
+            })
+        }
+        '[' => {
+            Some(Box {
+                left: position,
+                right: Position { row: position.row,col: position.col + 1},
+            })
+        }
+        _=> None
+    };    
+    new_box
+}
 fn move_boxes_vert(
     grid: &mut Grid<char>,
     offset: (i32, i32),
     position: Position,
 ) -> Option<Position> {
+    //[]
+    // can both characters move?
+    // get the current box based on the position []
+    let curr_box = get_box(grid, position);
     let next_position = calc_position(offset,position);
+    // build the next box based off the position to move
+    if let Some(p) = next_position {
+        
+    }
     Some(Position {
         row: 0,
         col: 0,
