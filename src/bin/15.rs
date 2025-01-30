@@ -300,61 +300,57 @@ fn move_boxes_horz(
     if let (Some(l), Some(r)) = next_box_position {
         let neighbor_value = grid.get(r.row, r.col);
         return match neighbor_value {
-            Some('.') => {
-                match offset {
-                    (0,1) => {
-                        let next_box = Box {
-                            left: Position {
-                                row: l.row,
-                                col: l.col,
-                            },
-                            right: Position {
-                                row: r.row,
-                                col: r.col,
-                            },
-                        };
-                        let curr_box = Box {
-                            left: position,
-                            right: Position {
-                                row: position.row,
-                                col: position.col,
-                            },
-                        };
-                        move_box(grid, curr_box, next_box);
-                        Some(Position {
+            Some('.') => match offset {
+                (0, 1) => {
+                    let next_box = Box {
+                        left: Position {
                             row: l.row,
                             col: l.col,
-                        })
-
-                    },
-                    (0,-1) => {
-                        let next_box = Box {
-                            left: Position {
-                                row: r.row,
-                                col: r.col,
-                            },
-                            right: Position {
-                                row: l.row,
-                                col: l.col,
-                            },
-                        };
-                        let curr_box = Box {
-                            left: position,
-                            right: Position {
-                                row: position.row,
-                                col: position.col,
-                            },
-                        };
-                        move_box(grid, curr_box, next_box);
-                        Some(Position {
-                            row: l.row,
-                            col: l.col,
-                        })
-
-                    },
-                    _=>Some(position)
+                        },
+                        right: Position {
+                            row: r.row,
+                            col: r.col,
+                        },
+                    };
+                    let curr_box = Box {
+                        left: position,
+                        right: Position {
+                            row: position.row,
+                            col: position.col,
+                        },
+                    };
+                    move_box(grid, curr_box, next_box);
+                    Some(Position {
+                        row: l.row,
+                        col: l.col,
+                    })
                 }
-            }
+                (0, -1) => {
+                    let next_box = Box {
+                        left: Position {
+                            row: r.row,
+                            col: r.col,
+                        },
+                        right: Position {
+                            row: l.row,
+                            col: l.col,
+                        },
+                    };
+                    let curr_box = Box {
+                        left: position,
+                        right: Position {
+                            row: position.row,
+                            col: position.col,
+                        },
+                    };
+                    move_box(grid, curr_box, next_box);
+                    Some(Position {
+                        row: l.row,
+                        col: l.col,
+                    })
+                }
+                _ => Some(position),
+            },
             // another box
             Some('[') | Some(']') => {
                 let new_location = move_boxes_horz(
@@ -377,22 +373,24 @@ fn move_boxes_horz(
 }
 fn get_box(grid: &Grid<char>, position: Position) -> Option<Box> {
     let char_at_pos = grid.get(position.row, position.col).unwrap();
-    
+
     let new_box = match char_at_pos {
-        ']' => {
-            Some(Box {
-                left: Position { row: position.row, col: position.col - 1 },
-                right: position,
-            })
-        }
-        '[' => {
-            Some(Box {
-                left: position,
-                right: Position { row: position.row,col: position.col + 1},
-            })
-        }
-        _=> None
-    };    
+        ']' => Some(Box {
+            left: Position {
+                row: position.row,
+                col: position.col - 1,
+            },
+            right: position,
+        }),
+        '[' => Some(Box {
+            left: position,
+            right: Position {
+                row: position.row,
+                col: position.col + 1,
+            },
+        }),
+        _ => None,
+    };
     new_box
 }
 fn move_boxes_vert(
@@ -404,15 +402,12 @@ fn move_boxes_vert(
     // can both characters move?
     // get the current box based on the position []
     let curr_box = get_box(grid, position);
-    let next_position = calc_position(offset,position);
+    let next_position = calc_position(offset, position);
     // build the next box based off the position to move
     if let Some(p) = next_position {
-        
+        move_box(grid, p, /* Box */)
     }
-    Some(Position {
-        row: 0,
-        col: 0,
-    })
+    Some(Position { row: 0, col: 0 })
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
@@ -560,6 +555,24 @@ mod tests {
         grid.insert_row(0, vec!['#', '#', '.', '[', ']', '[', ']', '#', '#']);
         move_boxes_horz(&mut grid, (0, -1), Position { row: 0, col: 6 });
         println!("{:?}", grid);
+    }
+    #[test]
+    fn test_move_box_up() {
+        let mut grid: Grid<char> = Grid::new(2, 4);
+        grid.insert_row(0, vec!['#', '.', '.', '#']);
+        grid.insert_row(1, vec!['#', '[', ']', '#', '#']);
+        move_boxes_vert(&mut grid, (-1, 0), Position { row: 0, col: 1 });
+        println!("{:?}", grid);
+    }
+    #[test]
+    fn test_get_box() {
+        let mut grid: Grid<char> = Grid::new(2, 4);
+        grid.insert_row(0, vec!['#', '.', '.', '#']);
+        grid.insert_row(1, vec!['#', '[', ']', '#']);
+        let new_box = get_box(&grid, Position { row: 1, col: 1 });
+        println!("{:?}", new_box);
+        let new_box = get_box(&grid, Position { row: 1, col: 2 });
+        println!("{:?}", new_box);
 
     }
 }
