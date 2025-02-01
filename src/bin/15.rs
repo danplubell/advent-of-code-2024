@@ -192,7 +192,7 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(total)
 }
 
-fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<char>) -> Position {
+fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<char>) -> Option<Position> {
     let offset = match direction {
         Direction::Up => NEIGHBOR_OFFSETS[UP],
         Direction::Right => NEIGHBOR_OFFSETS[RIGHT],
@@ -205,13 +205,13 @@ fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<ch
         let neighbor_value = grid.get(p.row, p.col);
         return match neighbor_value {
             // hit a wall
-            Some('#') => robot_location,
+            Some('#') => Some(robot_location),
             Some('.') => {
                 move_robot(robot_location, p, grid);
-                Position {
+                Some(Position {
                     row: p.row,
                     col: p.col,
-                }
+                })
             }
             //move boxes if possible
             Some(b) => {
@@ -221,34 +221,34 @@ fn make_move2(direction: Direction, robot_location: Position, grid: &mut Grid<ch
                             let open_position = move_boxes_vert(grid, offset, p);
                             if open_position.is_some() {
                                 move_robot(robot_location, p, grid);
-                                Position {
+                                Some(Position {
                                     row: p.row,
                                     col: p.col,
-                                }
+                                })
                             } else {
-                                robot_location
+                                None
                             }
                         }
                         _ => {
                             let open_position = move_boxes_horz(grid, offset, p);
                             if open_position.is_some() {
                                 move_robot(robot_location, p, grid);
-                                Position {
+                                Some(Position {
                                     row: p.row,
                                     col: p.col,
-                                }
+                                })
                             } else {
-                                robot_location
+                                None
                             }
                         }
                     };
                 }
-                robot_location
+                None
             }
-            _ => robot_location,
+            _ => None,
         };
     }
-    robot_location
+    None
 }
 
 fn calc_position_horz(
@@ -572,7 +572,7 @@ pub fn part_two(input: &str) -> Option<u32> {
             new_line
         })
         .collect();
-    println!("{:?}", new_map);
+//    println!("{:?}", new_map);
     grid_length = new_map.len();
     //find robot location
     let mut robot_location = Position { row: 0, col: 0 };
@@ -614,19 +614,28 @@ pub fn part_two(input: &str) -> Option<u32> {
                     'v' => Direction::Down,
                     _ => Direction::NoDirection,
                 };
-                println!("Directon: {:?}", direction);
-                robot_location = make_move2(direction, robot_location, &mut grid);
-                for i in 0..grid.rows() {
-                    println!();
-                    for j in 0..grid.cols() {
-                        let c = grid.get(i, j).unwrap();
-                        print!("{}", c);
-                    }
+//                println!("Directon: {:?}", direction);
+                let save_grid = grid.clone();
+                let new_robot_location = make_move2(direction, robot_location, &mut grid);
+                match new_robot_location {
+                    Some(new_pos) => robot_location = new_pos,
+                    _=> grid = save_grid.clone(),
                 }
             })
         }
     });
-    None
+    let mut total = 0;
+    for i in 0..grid.rows() {
+        println!();
+        for j in 0..grid.cols() {
+            let c = grid.get(i, j).unwrap();
+            if *c == '[' {
+                total += i * 100 + j
+            }
+        }
+    }
+
+    Some(total as u32)
 }
 
 #[cfg(test)]
@@ -642,7 +651,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(9021));
     }
     #[test]
     fn test_move_boxes() {
@@ -809,7 +818,7 @@ mod tests {
         grid.insert_row(2, vec!['#', '[', ']', '[', ']', '[', ']', '#']);
         grid.insert_row(3, vec!['#', '.', '.', '.', '#', '.', '.', '#']);
 
-        move_boxes_vert(&mut grid, (1, 0), Position { row: 0, col: 4 });
+        assert_eq!(move_boxes_vert(&mut grid, (1, 0), Position { row: 0, col: 4 }), None);
         for i in 0..grid.rows() {
             println!();
             for j in 0..grid.cols() {
