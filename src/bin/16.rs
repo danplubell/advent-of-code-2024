@@ -1,11 +1,11 @@
 advent_of_code::solution!(16);
 
 use grid::Grid;
-use petgraph::algo::{all_simple_paths, dijkstra};
+use petgraph::algo::{all_simple_paths, astar, dijkstra};
 use petgraph::graph::{EdgeIndex, NodeIndex};
 use petgraph::Graph;
 use priority_queue::{DoublePriorityQueue, PriorityQueue};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, PartialEq, Copy, Clone, PartialOrd)]
 enum Direction {
@@ -85,6 +85,37 @@ struct LocationEntry {
     d_position: Position,
 }
 type Cost = isize;
+pub fn part_one1(input: &str) -> Option<u32> {
+    let grid_rows = input.lines().count();
+    let grid_cols = input.lines().next().unwrap().len();
+    let mut grid: Grid<char> = Grid::new(grid_rows, grid_cols);
+    let mut start_location = Position { row: 0, col: 0 };
+    let mut end_location = Position { row: 0, col: 0 };
+
+    // put stuff in grid
+    input.lines().enumerate().for_each(|(row, l)| {
+        if l.starts_with("#") {
+            l.chars().enumerate().for_each(|(col, c)| {
+                let g = grid.get_mut(row, col).unwrap();
+                if c == 'S' {
+                    start_location = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
+                }
+                if c == 'E' {
+                    end_location = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
+                }
+                *g = c;
+            })
+        }
+    });
+
+    None
+}
 pub fn part_one(input: &str) -> Option<u32> {
     let mut pq: DoublePriorityQueue<QueueEntry, Cost> = DoublePriorityQueue::new();
     let mut seen: HashSet<LocationEntry> = HashSet::new();
@@ -100,10 +131,16 @@ pub fn part_one(input: &str) -> Option<u32> {
             l.chars().enumerate().for_each(|(col, c)| {
                 let g = grid.get_mut(row, col).unwrap();
                 if c == 'S' {
-                    start_location = Position { row: row as isize, col: col as isize }
+                    start_location = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
                 }
                 if c == 'E' {
-                    end_location = Position { row: row as isize, col: col as isize }
+                    end_location = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
                 }
                 *g = c;
             })
@@ -132,6 +169,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         if let Some((entry, cost)) = queue_entry {
             if *c == 'E' {
                 total_cost = cost;
+                println!("length: {}", pq.len());
                 break;
             }
             // create moves
@@ -139,28 +177,42 @@ pub fn part_one(input: &str) -> Option<u32> {
                 QueueEntry {
                     cost: cost + 1,
                     location_entry: LocationEntry {
-                        position: Position { row: entry.location_entry.position.row + entry.location_entry.d_position.row,
-                            col: entry.location_entry.position.col + entry.location_entry.d_position.col},
-                        d_position: Position { row: entry.location_entry.d_position.row,
-                            col: entry.location_entry.d_position.col },
+                        position: Position {
+                            row: entry.location_entry.position.row
+                                + entry.location_entry.d_position.row,
+                            col: entry.location_entry.position.col
+                                + entry.location_entry.d_position.col,
+                        },
+                        d_position: Position {
+                            row: entry.location_entry.d_position.row,
+                            col: entry.location_entry.d_position.col,
+                        },
                     },
                 },
                 QueueEntry {
                     cost: cost + 1000,
                     location_entry: LocationEntry {
-                        position: Position { row: entry.location_entry.position.row,
-                            col: entry.location_entry.position.col },
-                        d_position: Position { row: entry.location_entry.d_position.col,
-                            col: -entry.location_entry.d_position.row },
+                        position: Position {
+                            row: entry.location_entry.position.row,
+                            col: entry.location_entry.position.col,
+                        },
+                        d_position: Position {
+                            row: entry.location_entry.d_position.col,
+                            col: -entry.location_entry.d_position.row,
+                        },
                     },
                 },
                 QueueEntry {
                     cost: cost + 1000,
                     location_entry: LocationEntry {
-                        position: Position { row: entry.location_entry.position.row,
-                            col: entry.location_entry.position.col },
-                        d_position: Position { row: -entry.location_entry.d_position.col,
-                            col: entry.location_entry.d_position.row },
+                        position: Position {
+                            row: entry.location_entry.position.row,
+                            col: entry.location_entry.position.col,
+                        },
+                        d_position: Position {
+                            row: -entry.location_entry.d_position.col,
+                            col: entry.location_entry.d_position.row,
+                        },
                     },
                 },
             ];
@@ -211,7 +263,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
         */
     }
-
+    println!("seen: {:?}", seen.len());
     Some(total_cost as u32)
 }
 fn add_neighbor_edge(
@@ -238,6 +290,196 @@ fn add_neighbor_edge(
     None
 }
 pub fn part_two(input: &str) -> Option<u32> {
+    let mut graph = Graph::<Node, usize>::new();
+    let grid_rows = input.lines().count();
+    let grid_cols = input.lines().next().unwrap().len();
+    let mut grid: Grid<char> = Grid::new(grid_rows, grid_cols);
+    let mut start_location = Node {
+        position: Position { row: 0, col: 0 },
+        neighbors: Default::default(),
+        index: None,
+    };
+    let mut end_location = Node {
+        position: Position { row: 0, col: 0 },
+        neighbors: Default::default(),
+        index: None,
+    };
+    // put stuff in grid
+    input.lines().enumerate().for_each(|(row, l)| {
+        if l.starts_with("#") {
+            l.chars().enumerate().for_each(|(col, c)| {
+                let g = grid.get_mut(row, col).unwrap();
+                if c == 'S' {
+                    start_location.position = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
+                }
+                if c == 'E' {
+                    end_location.position = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
+                }
+                *g = c;
+            })
+        }
+    });
+    let mut node_indexes: Vec<NodeIndex> = Vec::new();
+    let mut map: HashMap<Position, Node> = HashMap::new();
+    // build graph nodes
+    for i in 0..grid.rows() {
+        for j in 0..grid.cols() {
+            let c = grid.get(i, j).unwrap();
+            let neighbors = get_neighbors(
+                Position {
+                    row: i as isize,
+                    col: j as isize,
+                },
+                &grid,
+            );
+            let mut node = Node {
+                position: Position {
+                    row: i as isize,
+                    col: j as isize,
+                },
+                neighbors,
+                index: None,
+            };
+            let ix = graph.add_node(node);
+            node.index = Some(ix);
+            if node.position == start_location.position {
+                start_location.index = Some(ix);
+            }
+            if node.position == end_location.position {
+                end_location.index = Some(ix);
+            }
+
+            map.insert(node.position, node);
+            node_indexes.push(ix);
+        }
+    }
+
+    // add edges
+    for (n, map_node) in map.iter() {
+        // for each neighbor add an edge
+        let node = map.get(n);
+        if let Some(node) = node {
+            add_neighbor_edge(
+                &mut graph,
+                *map_node,
+                node.neighbors.top,
+                &map,
+                Direction::Top,
+            );
+            add_neighbor_edge(
+                &mut graph,
+                *map_node,
+                node.neighbors.right,
+                &map,
+                Direction::Right,
+            );
+            add_neighbor_edge(
+                &mut graph,
+                *map_node,
+                node.neighbors.bottom,
+                &map,
+                Direction::Bottom,
+            );
+            add_neighbor_edge(
+                &mut graph,
+                *map_node,
+                node.neighbors.left,
+                &map,
+                Direction::Left,
+            );
+        }
+    }
+    // 1. Find *a* shortest path and its length using astar
+    let start_node = start_location.index.unwrap();
+    let end_node = end_location.index.unwrap();
+    let shortest_path_info = astar(&graph, start_node, |goal| goal == end_node, |_| 1.0, |_| 0f64); // Assuming unit edge weights
+    let shortest_path_length = shortest_path_info.map(|(len, _)| len).unwrap();
+
+    // 2. Use BFS to find all shortest paths
+    let mut all_shortest_paths = Vec::new();
+    let mut bfs_queue = vec![(start_node, vec![start_node])]; // (node, current_path)
+
+    while let Some((current_node, current_path)) = bfs_queue.pop() {
+        if current_node == end_node
+            && current_path.len() == (shortest_path_length + (1f64)) as usize
+        {
+            // +1 because we start with start_node
+            all_shortest_paths.push(current_path);
+        } else if current_path.len() <= (shortest_path_length + (1f64)) as usize {
+            for neighbor in graph.neighbors(current_node) {
+                let mut new_path = current_path.clone();
+                new_path.push(neighbor);
+                bfs_queue.push((neighbor, new_path));
+            }
+        }
+    }
+    println!("all_shortest_paths: {:?}", all_shortest_paths.len());
+
+    // let paths: Vec<_> =
+    //     all_simple_paths::<Vec<_>, _>(&graph, start_location.index?, end_location.index?, 0, None)
+    //         .collect();
+    /*
+    let distances = dijkstra(&graph,start_location.index?, Some(end_location.index?), |e| *e.weight());
+
+    let shortest_path = distances.get(&end_location.index?).unwrap();
+    println!("\nShortest path distance to D: {:?}", shortest_path);
+    let path = astar(&graph, start_location.index?, |finish| finish == end_location.index.unwrap(), |e| *e.weight(), |_| 0);
+    let p = path.unwrap();
+    println!("p: {}", p.0);
+    for i in 0..400 {
+        let p1: Vec<_> = all_simple_paths::<Vec<_>, _>(&graph, start_location.index?, end_location.index?, 0, Some(i)).collect();
+        println!("iteration: {}", i);
+        if !p1.is_empty() {
+            println!("p1: {} {}", i, p1.len());
+            break;
+        }
+    }
+
+
+     */
+    // Store all paths with the shortest distance
+    /*    let mut equal_shortest_paths: Vec<Vec<Option<NodeIndex>>> = Vec::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(vec![end_location.index]);
+
+        // BFS to find all paths of equal length
+        while let Some(current_path) = queue.pop_front() {
+            let current_opt = *current_path.first().unwrap();
+            let current = current_opt.unwrap();
+
+            if current == start_location.index? {
+                let mut path = current_path.clone();
+                path.reverse();
+                equal_shortest_paths.push(path);
+                continue;
+            }
+
+            // Check all possible predecessors
+            for neighbor in graph.neighbors_directed(current, petgraph::Direction::Incoming) {
+                if let Some(&neighbor_dist) = distances.get(&neighbor) {
+                    if let Some(edge) = graph.find_edge(neighbor, current) {
+                        let weight = graph.edge_weight(edge).unwrap();
+
+                        // If this edge is part of a shortest path
+                        if neighbor_dist + weight == distances[&current] {
+                            let mut new_path = current_path.clone();
+                            new_path.insert(0, Option::from(neighbor));
+                            queue.push_back(new_path);
+                        }
+                    }
+                }
+            }
+        }
+        let mut t = 0_usize;
+        equal_shortest_paths.iter().for_each(|path|  t += path.len());
+        println!("{}", t);
+    */
     None
 }
 
@@ -258,6 +500,94 @@ mod tests {
     }
 }
 
+/*
+use petgraph::Graph;
+use petgraph::algo::dijkstra;
+use petgraph::graph::NodeIndex;
+use std::collections::{HashMap, VecDeque};
+
+fn find_all_shortest_paths(
+    graph: &Graph<&str, i32>,
+    start: NodeIndex,
+    end: NodeIndex,
+) -> Vec<Vec<NodeIndex>> {
+    // Get distances using Dijkstra
+    let distances = dijkstra(
+        &graph,
+        start,
+        Some(end),
+        |e| *e.weight()
+    );
+
+    // Get the shortest distance to end
+    let shortest_distance = match distances.get(&end) {
+        Some(&distance) => distance,
+        None => return vec![], // No path exists
+    };
+
+    // Store all paths with the shortest distance
+    let mut equal_shortest_paths: Vec<Vec<NodeIndex>> = Vec::new();
+    let mut queue = VecDeque::new();
+    queue.push_back(vec![end]);
+
+    // BFS to find all paths of equal length
+    while let Some(current_path) = queue.pop_front() {
+        let current = *current_path.first().unwrap();
+
+        if current == start {
+            let mut path = current_path.clone();
+            path.reverse();
+            equal_shortest_paths.push(path);
+            continue;
+        }
+
+        // Check all possible predecessors
+        for neighbor in graph.neighbors_directed(current, petgraph::Direction::Incoming) {
+            if let Some(&neighbor_dist) = distances.get(&neighbor) {
+                if let Some(edge) = graph.find_edge(neighbor, current) {
+                    let weight = graph.edge_weight(edge).unwrap();
+
+                    // If this edge is part of a shortest path
+                    if neighbor_dist + weight == distances[&current] {
+                        let mut new_path = current_path.clone();
+                        new_path.insert(0, neighbor);
+                        queue.push_back(new_path);
+                    }
+                }
+            }
+        }
+    }
+
+    equal_shortest_paths
+}
+
+fn main() {
+    let mut graph = Graph::<&str, i32>::new();
+
+    // Create nodes
+    let a = graph.add_node("A");
+    let b = graph.add_node("B");
+    let c = graph.add_node("C");
+    let d = graph.add_node("D");
+
+    // Add edges with weights - creating multiple paths of equal length
+    graph.add_edge(a, b, 1);
+    graph.add_edge(b, d, 2);
+    graph.add_edge(a, c, 1);
+    graph.add_edge(c, d, 2);
+
+    let paths = find_all_shortest_paths(&graph, a, d);
+
+    println!("All shortest paths from A to D:");
+    for (i, path) in paths.iter().enumerate() {
+        print!("Path {}: ", i + 1);
+        for node_idx in path {
+            print!("{} -> ", graph[*node_idx]);
+        }
+        println!("");
+    }
+}
+ */
 /*
 pub fn part_one_graph(input: &str) -> Option<u32> {
     let mut graph = Graph::<Node, usize>::new();
