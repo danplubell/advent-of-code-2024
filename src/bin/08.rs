@@ -170,7 +170,9 @@ pub fn part_two(input: &str) -> Option<i64> {
         })
     });
     // now look for antinodes
-    Some(find_antinodes2(ant,max_row as i64, max_col as i64, ))
+    Some(find_antinodes2(ant, max_row as i64, max_col as i64, ))
+}
+
 
 pub fn part_two(input: &str) -> Option<u32> {
     None
