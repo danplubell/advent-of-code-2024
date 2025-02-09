@@ -22,6 +22,7 @@ struct Position {
 struct Visited {
     position: Position,
     dir: usize,
+    blocked: bool,
 }
 #[derive(Debug, Clone, PartialEq, Default, Copy, Hash, Eq)]
 struct Neighbors {
@@ -70,7 +71,7 @@ pub fn part_two(input: &str) -> Option<u32> {
             *g = c;
         })
     });
-    let mut visited: HashSet<Visited> = HashSet::new();
+    let mut visited: HashMap<Position, Visited> = HashMap::new();
     let mut curr_pos = start_location;
     let mut curr_dir = TOP;
     let mut prev_pos = Position {
@@ -78,8 +79,8 @@ pub fn part_two(input: &str) -> Option<u32> {
         col: 99999,
     };
     while (curr_pos != end_location) {
-        (curr_pos, curr_dir) = next_move(&grid, curr_pos, curr_dir, &mut visited);
-        println!("currPos, curr_dir {:?} {}",curr_pos, curr_dir );
+        (curr_pos, curr_dir) = next_move(&grid, curr_pos, curr_dir, &mut visited)?;
+        println!("currPos, curr_dir {:?} {}", curr_pos, curr_dir);
         if curr_pos == prev_pos {
             break;
         }
@@ -92,31 +93,18 @@ fn next_move(
     grid: &Grid<char>,
     curr_pos: Position,
     curr_dir: usize,
-    visited: &mut HashSet<Visited>,
-) -> (Position, usize) {
-    let (next_pos, dir) = get_new_pos(grid, &curr_pos, curr_dir, visited);
-
-    // has it been visited using the same direction and position
-    let added = visited.insert(Visited {
-        position: next_pos,
-        dir,
-    });
-    if added {
-        return (next_pos, dir);
-    }
-    //    }
-    (curr_pos, curr_dir)
+    visited: &mut HashMap<Position, Visited>,
+) -> Option<(Position, usize)> {
+    get_new_pos(grid, &curr_pos, curr_dir, visited)
 }
 
-fn check_neighbor(grid: &Grid<char>, curr_pos: Position, dir: usize) -> Option<Position> {
-    let calc_pos = calc_position(NEIGHBOR_OFFSETS[dir], curr_pos)?;
-    let c = grid.get(calc_pos.row, calc_pos.col).unwrap();
-    if *c != '#' {
-        return Some(calc_pos);
-    }
-    None
+fn check_neighbor(grid: &Grid<char>, next_pos: Option<Position>) -> bool {
+    next_pos.is_none_or(|p| {
+        let c = grid.get(p.row, p.col).unwrap();
+        *c != '#'
+    })
 }
-
+/*
 fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
     // Define direction patterns for each current direction
     let directions = match curr_dir {
@@ -135,11 +123,73 @@ fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> 
         })
         .unwrap_or((*curr_pos, curr_dir))
 }
-fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize, visited: &mut HashSet<Visited>) -> (Position, usize) {
-    match curr_dir {
+
+ */
+fn get_new_pos(
+    grid: &Grid<char>,
+    curr_pos: &Position,
+    curr_dir: usize,
+    visited: &mut HashMap<Position, Visited>,
+) -> Option<(Position, usize)> {
+    // check to see if we can move to the neighbor going the same direction
+
+    let directions = match curr_dir {
+        TOP => [TOP, LEFT, RIGHT, BOTTOM],
+        RIGHT => [RIGHT, TOP, BOTTOM, LEFT],
+        BOTTOM => [BOTTOM, RIGHT, LEFT, TOP],
+        LEFT => [LEFT, TOP, BOTTOM, RIGHT],
+        _ => unreachable!(),
+    };
+
+    let results = directions.iter().enumerate().find_map(|(idx, d)| {
+        let next_pos = calc_position(NEIGHBOR_OFFSETS[*d], *curr_pos);
+        let not_wall_or_outside = check_neighbor(grid, next_pos);
+        let pos_visit = visited.entry(*curr_pos).or_insert(Visited {
+            position: *curr_pos,
+            dir: curr_dir,
+            blocked: false,
+        });
+        if not_wall_or_outside && !pos_visit.blocked {
+            return Some((next_pos, d, idx));
+        }
+        None
+    });
+    if let Some(r) = results {
+        // is it going out the way it came in?
+        let next_p = r.0?;
+        let next_d = r.1;
+        if r.2 == 3 {
+            visited.entry(next_p).and_modify(|v| {
+                v.blocked = true;
+            });
+        }
+        return Some((next_p, *next_d))
+    }
+
+    // was it the last index, if so then the direction is reversed
+    // mark as blocked
+
+    /*
+    directions.iter().enumerate().for_each(|(idx, d)|{
+        let next_pos = calc_position(NEIGHBOR_OFFSETS[curr_dir], *curr_pos);
+        let not_wall_or_outside = check_neighbor(grid, next_pos);
+        let pos_visit = visited.entry(*curr_pos).or_insert(Visited {
+            position: *curr_pos,
+            dir: curr_dir,
+            blocked: false,
+        });
+        if not_wall_or_outside && !pos_visit.blocked {
+            return Some((next_pos, curr_dir));
+        }
+    });
+
+     */
+    None
+    /*match curr_dir {
+
         RIGHT => {
             let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
-            if same_direction.is_some(){
+            if same_direction.is_some() {
                 return (same_direction.unwrap(), curr_dir);
             }
             //Top
@@ -162,7 +212,7 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize, visited:
         }
         LEFT => {
             let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
-            if same_direction.is_some(){
+            if same_direction.is_some() {
                 return (same_direction.unwrap(), curr_dir);
             }
             //Top
@@ -184,7 +234,7 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize, visited:
         }
         TOP => {
             let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
-            if same_direction.is_some(){
+            if same_direction.is_some() {
                 return (same_direction.unwrap(), curr_dir);
             }
             //Top
@@ -206,7 +256,7 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize, visited:
         }
         BOTTOM => {
             let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
-            if same_direction.is_some(){
+            if same_direction.is_some() {
                 return (same_direction.unwrap(), curr_dir);
             }
 
@@ -229,6 +279,8 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize, visited:
         }
         _ => (*curr_pos, curr_dir),
     }
+
+         */
 }
 
 fn is_not_wall_or_out_move(grid: &Grid<char>, position: &Option<Position>) -> bool {
