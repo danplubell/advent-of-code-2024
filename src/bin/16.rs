@@ -79,12 +79,12 @@ pub fn part_two(input: &str) -> Option<u32> {
     };
     while (curr_pos != end_location) {
         (curr_pos, curr_dir) = next_move(&grid, curr_pos, curr_dir, &mut visited);
+        println!("currPos, curr_dir {:?} {}",curr_pos, curr_dir );
         if curr_pos == prev_pos {
             break;
         }
         prev_pos = curr_pos;
     }
-
     None
 }
 
@@ -94,10 +94,7 @@ fn next_move(
     curr_dir: usize,
     visited: &mut HashSet<Visited>,
 ) -> (Position, usize) {
-    // let new_pos = calc_position(NEIGHBOR_OFFSETS[curr_dir], curr_pos);
-    // check for wall or out of bounds
-    //    if is_not_wall_or_out_move(grid, &new_pos) {
-    let (next_pos, dir) = get_new_pos(grid, &curr_pos, curr_dir);
+    let (next_pos, dir) = get_new_pos(grid, &curr_pos, curr_dir, visited);
 
     // has it been visited using the same direction and position
     let added = visited.insert(Visited {
@@ -138,15 +135,20 @@ fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> 
         })
         .unwrap_or((*curr_pos, curr_dir))
 }
-fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
+fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize, visited: &mut HashSet<Visited>) -> (Position, usize) {
     match curr_dir {
         RIGHT => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some(){
+                return (same_direction.unwrap(), curr_dir);
+            }
             //Top
             let tp = check_neighbor(grid, *curr_pos, TOP);
             //Bottom
             let bp = check_neighbor(grid, *curr_pos, BOTTOM);
             //Left
             let lp = check_neighbor(grid, *curr_pos, LEFT);
+
             if tp.is_some() {
                 return (tp.unwrap(), TOP);
             }
@@ -159,11 +161,15 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Posi
             (*curr_pos, curr_dir)
         }
         LEFT => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some(){
+                return (same_direction.unwrap(), curr_dir);
+            }
             //Top
             let tp = check_neighbor(&grid, *curr_pos, TOP);
             //Bottom
             let bp = check_neighbor(&grid, *curr_pos, BOTTOM);
-            //Left
+            //right
             let rp = check_neighbor(&grid, *curr_pos, RIGHT);
             if tp.is_some() {
                 return (tp.unwrap(), TOP);
@@ -177,6 +183,10 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Posi
             (*curr_pos, curr_dir)
         }
         TOP => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some(){
+                return (same_direction.unwrap(), curr_dir);
+            }
             //Top
             let rp = check_neighbor(&grid, *curr_pos, RIGHT);
             //Bottom
@@ -195,6 +205,11 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Posi
             (*curr_pos, curr_dir)
         }
         BOTTOM => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some(){
+                return (same_direction.unwrap(), curr_dir);
+            }
+
             //Top
             let tp = check_neighbor(&grid, *curr_pos, TOP);
             //Bottom
