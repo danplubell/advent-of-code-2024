@@ -1,7 +1,8 @@
 advent_of_code::solution!(16);
 
-use std::collections::{HashMap, HashSet};
 use grid::Grid;
+use priority_queue::DoublePriorityQueue;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Copy, Clone, PartialOrd)]
 enum Direction {
@@ -43,8 +44,6 @@ fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
     })
 }
 
-
-
 pub fn part_two(input: &str) -> Option<u32> {
     let grid_rows = input.lines().count();
     let grid_cols = input.lines().next().unwrap().len();
@@ -74,7 +73,10 @@ pub fn part_two(input: &str) -> Option<u32> {
     let mut visited: HashSet<Visited> = HashSet::new();
     let mut curr_pos = start_location;
     let mut curr_dir = TOP;
-    let mut prev_pos = start_location;
+    let mut prev_pos = Position {
+        row: 99999,
+        col: 99999,
+    };
     while (curr_pos != end_location) {
         (curr_pos, curr_dir) = next_move(&grid, curr_pos, curr_dir, &mut visited);
         if curr_pos == prev_pos {
@@ -86,17 +88,26 @@ pub fn part_two(input: &str) -> Option<u32> {
     None
 }
 
-fn next_move(grid: &Grid<char>, curr_pos: Position, curr_dir: usize, visited: &mut HashSet<Visited >) -> (Position, usize) {
-    let new_pos = calc_position(NEIGHBOR_OFFSETS[curr_dir], curr_pos);
+fn next_move(
+    grid: &Grid<char>,
+    curr_pos: Position,
+    curr_dir: usize,
+    visited: &mut HashSet<Visited>,
+) -> (Position, usize) {
+    // let new_pos = calc_position(NEIGHBOR_OFFSETS[curr_dir], curr_pos);
     // check for wall or out of bounds
-    if !is_not_wall_or_out_move(grid, &new_pos) {
-        let (new_pos, dir) =  get_new_pos(grid, &curr_pos, curr_dir);
-        // has it been visited using the same direction and position
-        let added = visited.insert(Visited { position: new_pos, dir });
-        if added {
-            return (new_pos, dir);
-        }
+    //    if is_not_wall_or_out_move(grid, &new_pos) {
+    let (next_pos, dir) = get_new_pos(grid, &curr_pos, curr_dir);
+
+    // has it been visited using the same direction and position
+    let added = visited.insert(Visited {
+        position: next_pos,
+        dir,
+    });
+    if added {
+        return (next_pos, dir);
     }
+    //    }
     (curr_pos, curr_dir)
 }
 
@@ -123,8 +134,7 @@ fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> 
     directions
         .iter()
         .find_map(|&(check_dir, new_dir)| {
-            check_neighbor(grid, *curr_pos, check_dir)
-                .map(|pos| (pos, new_dir))
+            check_neighbor(grid, *curr_pos, check_dir).map(|pos| (pos, new_dir))
         })
         .unwrap_or((*curr_pos, curr_dir))
 }
@@ -214,6 +224,141 @@ fn is_not_wall_or_out_move(grid: &Grid<char>, position: &Option<Position>) -> bo
         }
         _ => false,
     }
+}
+
+//int cost, int r, int c, int dr, int dc
+#[derive(Hash, Debug, Clone, Copy, PartialEq, Eq)]
+struct QueueEntry {
+    cost: Cost,
+    location_entry: LocationEntry,
+}
+#[derive(Hash, Debug, Clone, Copy, PartialEq, Eq)]
+struct LocationEntry {
+    position: Position,
+    d_position: Position,
+}
+type Cost = isize;
+
+pub fn part_one(input: &str) -> Option<u32> {
+    let mut pq: DoublePriorityQueue<QueueEntry, Cost> = DoublePriorityQueue::new();
+    let mut seen: HashSet<LocationEntry> = HashSet::new();
+
+    let grid_rows = input.lines().count();
+    let grid_cols = input.lines().next().unwrap().len();
+    let mut grid: Grid<char> = Grid::new(grid_rows, grid_cols);
+    let mut start_location = Position { row: 0, col: 0 };
+    let mut end_location = Position { row: 0, col: 0 };
+    // put stuff in grid
+    input.lines().enumerate().for_each(|(row, l)| {
+        if l.starts_with("#") {
+            l.chars().enumerate().for_each(|(col, c)| {
+                let g = grid.get_mut(row, col).unwrap();
+                if c == 'S' {
+                    start_location = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
+                }
+                if c == 'E' {
+                    end_location = Position {
+                        row: row as isize,
+                        col: col as isize,
+                    }
+                }
+                *g = c;
+            })
+        }
+    });
+    let start_location_entry = LocationEntry {
+        position: start_location,
+        d_position: Position { row: 0, col: 1 },
+    };
+    let start_entry = QueueEntry {
+        cost: 0,
+        location_entry: start_location_entry,
+    };
+    pq.push(start_entry, 0);
+    seen.insert(start_location_entry);
+    let mut total_cost: isize = 0;
+    while !pq.is_empty() {
+        let (entry, cost) = pq.peek_min().unwrap();
+        let c = grid
+            .get(
+                entry.location_entry.position.row,
+                entry.location_entry.position.col,
+            )
+            .unwrap();
+        let queue_entry: Option<(QueueEntry, Cost)> = pq.pop_min();
+        if let Some((entry, cost)) = queue_entry {
+            if *c == 'E' {
+                total_cost = cost;
+                println!("length: {}", pq.len());
+                break;
+            }
+            // create moves
+            let moves: Vec<QueueEntry> = vec![
+                QueueEntry {
+                    cost: cost + 1,
+                    location_entry: LocationEntry {
+                        position: Position {
+                            row: entry.location_entry.position.row
+                                + entry.location_entry.d_position.row,
+                            col: entry.location_entry.position.col
+                                + entry.location_entry.d_position.col,
+                        },
+                        d_position: Position {
+                            row: entry.location_entry.d_position.row,
+                            col: entry.location_entry.d_position.col,
+                        },
+                    },
+                },
+                QueueEntry {
+                    cost: cost + 1000,
+                    location_entry: LocationEntry {
+                        position: Position {
+                            row: entry.location_entry.position.row,
+                            col: entry.location_entry.position.col,
+                        },
+                        d_position: Position {
+                            row: entry.location_entry.d_position.col,
+                            col: -entry.location_entry.d_position.row,
+                        },
+                    },
+                },
+                QueueEntry {
+                    cost: cost + 1000,
+                    location_entry: LocationEntry {
+                        position: Position {
+                            row: entry.location_entry.position.row,
+                            col: entry.location_entry.position.col,
+                        },
+                        d_position: Position {
+                            row: -entry.location_entry.d_position.col,
+                            col: entry.location_entry.d_position.row,
+                        },
+                    },
+                },
+            ];
+            moves.iter().for_each(|e| {
+                // skip out-of-bounds or blocked cells
+                let c = grid.get(e.location_entry.position.row, e.location_entry.position.col);
+                if let Some(c) = c {
+                    if *c != '#' {
+                        let a = seen.insert(e.location_entry);
+                        if a {
+                            let new_entry = QueueEntry {
+                                cost: e.cost,
+                                location_entry: e.location_entry,
+                            };
+                            pq.push(new_entry, e.cost);
+                        }
+                    }
+                }
+            })
+        }
+    }
+    println!("seen: {:?}", seen.len());
+    Some(total_cost as u32)
 }
 
 #[cfg(test)]
