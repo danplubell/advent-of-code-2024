@@ -110,7 +110,27 @@ fn check_neighbor(grid: &Grid<char>, curr_pos: Position, dir: usize) -> Option<P
     }
     None
 }
+
 fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
+    // Define direction patterns for each current direction
+    let directions = match curr_dir {
+        RIGHT => [(TOP, TOP), (BOTTOM, BOTTOM), (LEFT, LEFT)],
+        LEFT => [(TOP, TOP), (BOTTOM, BOTTOM), (RIGHT, RIGHT)],
+        TOP => [(RIGHT, RIGHT), (LEFT, LEFT), (BOTTOM, BOTTOM)],
+        BOTTOM => [(RIGHT, RIGHT), (LEFT, LEFT), (TOP, TOP)],
+        _ => return (*curr_pos, curr_dir),
+    };
+
+    // Find the first valid neighbor
+    directions
+        .iter()
+        .find_map(|&(check_dir, new_dir)| {
+            check_neighbor(grid, *curr_pos, check_dir)
+                .map(|pos| (pos, new_dir))
+        })
+        .unwrap_or((*curr_pos, curr_dir))
+}
+fn get_new_pos_old(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
     match curr_dir {
         RIGHT => {
             //Top
