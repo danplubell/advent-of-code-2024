@@ -43,9 +43,7 @@ fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
     })
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
-    Some(9846)
-}
+
 
 pub fn part_two(input: &str) -> Option<u32> {
     let grid_rows = input.lines().count();
@@ -91,7 +89,7 @@ pub fn part_two(input: &str) -> Option<u32> {
 fn next_move(grid: &Grid<char>, curr_pos: Position, curr_dir: usize, visited: &mut HashSet<Visited >) -> (Position, usize) {
     let new_pos = calc_position(NEIGHBOR_OFFSETS[curr_dir], curr_pos);
     // check for wall or out of bounds
-    if !is_valid_move(grid, &new_pos) {
+    if !is_not_wall_or_out_move(grid, &new_pos) {
         let (new_pos, dir) =  get_new_pos(grid, &curr_pos, curr_dir);
         // has it been visited using the same direction and position
         let added = visited.insert(Visited { position: new_pos, dir });
@@ -111,7 +109,7 @@ fn check_neighbor(grid: &Grid<char>, curr_pos: Position, dir: usize) -> Option<P
     None
 }
 
-fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
+fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
     // Define direction patterns for each current direction
     let directions = match curr_dir {
         RIGHT => [(TOP, TOP), (BOTTOM, BOTTOM), (LEFT, LEFT)],
@@ -130,7 +128,7 @@ fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Posi
         })
         .unwrap_or((*curr_pos, curr_dir))
 }
-fn get_new_pos_old(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
+fn get_new_pos(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
     match curr_dir {
         RIGHT => {
             //Top
@@ -208,7 +206,7 @@ fn get_new_pos_old(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (
     }
 }
 
-fn is_valid_move(grid: &Grid<char>, position: &Option<Position>) -> bool {
+fn is_not_wall_or_out_move(grid: &Grid<char>, position: &Option<Position>) -> bool {
     match position {
         Some(p) => {
             let c = grid.get(p.row, p.col);
