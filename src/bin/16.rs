@@ -86,6 +86,7 @@ pub fn part_two(input: &str) -> Option<u32> {
         }
         prev_pos = curr_pos;
     }
+    visited.iter().for_each(|(pos, e)| if e.blocked {println!("{:?}", e)});
     None
 }
 
@@ -98,11 +99,9 @@ fn next_move(
     get_new_pos(grid, &curr_pos, curr_dir, visited)
 }
 
-fn check_neighbor(grid: &Grid<char>, next_pos: Option<Position>) -> bool {
-    next_pos.is_none_or(|p| {
-        let c = grid.get(p.row, p.col).unwrap();
-        *c != '#'
-    })
+fn check_neighbor(grid: &Grid<char>, next_pos: Position) -> bool {
+    let c = grid.get(next_pos.row, next_pos.col).unwrap();
+    *c != '#'
 }
 /*
 fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
@@ -142,13 +141,14 @@ fn get_new_pos(
     };
 
     let results = directions.iter().enumerate().find_map(|(idx, d)| {
-        let next_pos = calc_position(NEIGHBOR_OFFSETS[*d], *curr_pos);
+        let next_pos = calc_position(NEIGHBOR_OFFSETS[*d], *curr_pos)?;
         let not_wall_or_outside = check_neighbor(grid, next_pos);
-        let pos_visit = visited.entry(*curr_pos).or_insert(Visited {
+        let pos_visit = visited.entry(next_pos).or_insert(Visited {
             position: *curr_pos,
             dir: curr_dir,
             blocked: false,
         });
+        should keep track of directions array, how to handle a direction that is already visited
         if not_wall_or_outside && !pos_visit.blocked {
             return Some((next_pos, d, idx));
         }
@@ -156,15 +156,16 @@ fn get_new_pos(
     });
     if let Some(r) = results {
         // is it going out the way it came in?
-        let next_p = r.0?;
+        let next_p = r.0;
         let next_d = r.1;
         if r.2 == 3 {
             visited.entry(next_p).and_modify(|v| {
-                v.blocked = true;
+                v.blocked = true; need to block the current position and not the new one
             });
         }
-        return Some((next_p, *next_d))
+        return Some((next_p, *next_d));
     }
+    None
 
     // was it the last index, if so then the direction is reversed
     // mark as blocked
@@ -184,7 +185,6 @@ fn get_new_pos(
     });
 
      */
-    None
     /*match curr_dir {
 
         RIGHT => {
