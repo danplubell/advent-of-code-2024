@@ -19,11 +19,6 @@ struct Position {
     col: isize,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-struct Facing {
-    row: isize,
-    col: isize,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
 struct Visited {
     position: Position,
     dir: usize,
@@ -38,10 +33,10 @@ struct Neighbors {
 }
 
 const NEIGHBOR_OFFSETS: [(i32, i32); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
-const UP: (i32, i32) = (-1, 0); 
-const RIGHT: (i32, i32) = (0, 1);
-const DOWN: (i32, i32) = (1, 0);
-const LEFT: (i32, i32) = (0, -1);
+const TOP: usize = 0;
+const RIGHT: usize = 1;
+const BOTTOM: usize = 2;
+const LEFT: usize = 3;
 
 fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
     Option::from(Position {
@@ -76,19 +71,227 @@ pub fn part_two(input: &str) -> Option<u32> {
             *g = c;
         })
     });
-    // queue of positions to process
-    let mut q: Vec<(Position, Facing)> = vec![(start_location, Facing { row: 0, col: 1 })];
-    let mut all_costs: HashMap<(Position,Position), Cost> = HashMap::new();
-    all_costs.insert((start_location, start_location), 0);
-    
-    while let Some((_current_location, _current_facing)) = q.pop(){
-        let curr_cost = all_costs.entry((_current_location,_current_location)).or_insert(isize::MAX);
-        let new_points:Vec<(Position,Facing)> = Vec::new();
-        if _current_facing == Facing {}
+    let mut visited: HashMap<Position, Visited> = HashMap::new();
+    let mut curr_pos = start_location;
+    let mut curr_dir = TOP;
+    let mut prev_pos = Position {
+        row: 99999,
+        col: 99999,
+    };
+    while (curr_pos != end_location) {
+        (curr_pos, curr_dir) = next_move(&grid, curr_pos, curr_dir, &mut visited)?;
+        println!("currPos, curr_dir {:?} {}", curr_pos, curr_dir);
+        if curr_pos == prev_pos {
+            break;
+        }
+        prev_pos = curr_pos;
     }
+    visited.iter().for_each(|(pos, e)| println!("{:?}", e));
     None
 }
 
+fn next_move(
+    grid: &Grid<char>,
+    curr_pos: Position,
+    curr_dir: usize,
+    visited: &mut HashMap<Position, Visited>,
+) -> Option<(Position, usize)> {
+    get_new_pos(grid, &curr_pos, curr_dir, visited)
+}
+
+fn check_neighbor(grid: &Grid<char>, next_pos: Position) -> bool {
+    let c = grid.get(next_pos.row, next_pos.col).unwrap();
+    *c != '#'
+}
+/*
+fn get_new_pos_save(grid: &Grid<char>, curr_pos: &Position, curr_dir: usize) -> (Position, usize) {
+    // Define direction patterns for each current direction
+    let directions = match curr_dir {
+        RIGHT => [(TOP, TOP), (BOTTOM, BOTTOM), (LEFT, LEFT)],
+        LEFT => [(TOP, TOP), (BOTTOM, BOTTOM), (RIGHT, RIGHT)],
+        TOP => [(RIGHT, RIGHT), (LEFT, LEFT), (BOTTOM, BOTTOM)],
+        BOTTOM => [(RIGHT, RIGHT), (LEFT, LEFT), (TOP, TOP)],
+        _ => return (*curr_pos, curr_dir),
+    };
+
+    // Find the first valid neighbor
+    directions
+        .iter()
+        .find_map(|&(check_dir, new_dir)| {
+            check_neighbor(grid, *curr_pos, check_dir).map(|pos| (pos, new_dir))
+        })
+        .unwrap_or((*curr_pos, curr_dir))
+}
+
+ */
+fn get_new_pos(
+    grid: &Grid<char>,
+    curr_pos: &Position,
+    curr_dir: usize,
+    visited: &mut HashMap<Position, Visited>,
+) -> Option<(Position, usize)> {
+    // check to see if we can move to the neighbor going the same direction
+
+    let directions = match curr_dir {
+        TOP => [TOP, LEFT, RIGHT, BOTTOM],
+        RIGHT => [RIGHT, TOP, BOTTOM, LEFT],
+        BOTTOM => [BOTTOM, RIGHT, LEFT, TOP],
+        LEFT => [LEFT, TOP, BOTTOM, RIGHT],
+        _ => unreachable!(),
+    };
+
+    let results = directions.iter().enumerate().find_map(|(idx, d)| {
+        let next_pos = calc_position(NEIGHBOR_OFFSETS[*d], *curr_pos)?;
+        let not_wall_or_outside = check_neighbor(grid, next_pos);
+        let pos_visit = visited.entry(next_pos).or_insert(Visited {
+            position: *curr_pos,
+            dir: curr_dir,
+            blocked: false,
+        });
+//todo        should keep track of directions array, how to handle a direction that is already visited
+        if not_wall_or_outside && !pos_visit.blocked {
+            return Some((next_pos, d, idx));
+        }
+        None
+    });
+    if let Some(r) = results {
+        // is it going out the way it came in?
+        let next_p = r.0;
+        let next_d = r.1;
+        if r.2 == 3 {
+            visited.entry(*curr_pos).and_modify(|v| {
+                v.blocked = true; 
+            });
+        }
+        return Some((next_p, *next_d));
+    }
+    None
+
+    // was it the last index, if so then the direction is reversed
+    // mark as blocked
+
+    /*
+    directions.iter().enumerate().for_each(|(idx, d)|{
+        let next_pos = calc_position(NEIGHBOR_OFFSETS[curr_dir], *curr_pos);
+        let not_wall_or_outside = check_neighbor(grid, next_pos);
+        let pos_visit = visited.entry(*curr_pos).or_insert(Visited {
+            position: *curr_pos,
+            dir: curr_dir,
+            blocked: false,
+        });
+        if not_wall_or_outside && !pos_visit.blocked {
+            return Some((next_pos, curr_dir));
+        }
+    });
+
+     */
+    /*match curr_dir {
+
+        RIGHT => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some() {
+                return (same_direction.unwrap(), curr_dir);
+            }
+            //Top
+            let tp = check_neighbor(grid, *curr_pos, TOP);
+            //Bottom
+            let bp = check_neighbor(grid, *curr_pos, BOTTOM);
+            //Left
+            let lp = check_neighbor(grid, *curr_pos, LEFT);
+
+            if tp.is_some() {
+                return (tp.unwrap(), TOP);
+            }
+            if bp.is_some() {
+                return (bp.unwrap(), BOTTOM);
+            }
+            if lp.is_some() {
+                return (lp.unwrap(), LEFT);
+            }
+            (*curr_pos, curr_dir)
+        }
+        LEFT => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some() {
+                return (same_direction.unwrap(), curr_dir);
+            }
+            //Top
+            let tp = check_neighbor(&grid, *curr_pos, TOP);
+            //Bottom
+            let bp = check_neighbor(&grid, *curr_pos, BOTTOM);
+            //right
+            let rp = check_neighbor(&grid, *curr_pos, RIGHT);
+            if tp.is_some() {
+                return (tp.unwrap(), TOP);
+            }
+            if bp.is_some() {
+                return (bp.unwrap(), BOTTOM);
+            }
+            if rp.is_some() {
+                return (rp.unwrap(), RIGHT);
+            }
+            (*curr_pos, curr_dir)
+        }
+        TOP => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some() {
+                return (same_direction.unwrap(), curr_dir);
+            }
+            //Top
+            let rp = check_neighbor(&grid, *curr_pos, RIGHT);
+            //Bottom
+            let bp = check_neighbor(&grid, *curr_pos, BOTTOM);
+            //Left
+            let lp = check_neighbor(&grid, *curr_pos, LEFT);
+            if rp.is_some() {
+                return (rp.unwrap(), RIGHT);
+            }
+            if lp.is_some() {
+                return (lp.unwrap(), LEFT);
+            }
+            if bp.is_some() {
+                return (bp.unwrap(), BOTTOM);
+            }
+            (*curr_pos, curr_dir)
+        }
+        BOTTOM => {
+            let same_direction = check_neighbor(grid, *curr_pos, curr_dir);
+            if same_direction.is_some() {
+                return (same_direction.unwrap(), curr_dir);
+            }
+
+            //Top
+            let tp = check_neighbor(&grid, *curr_pos, TOP);
+            //Bottom
+            let rp = check_neighbor(&grid, *curr_pos, RIGHT);
+            //Left
+            let lp = check_neighbor(&grid, *curr_pos, LEFT);
+            if rp.is_some() {
+                return (rp.unwrap(), RIGHT);
+            }
+            if lp.is_some() {
+                return (lp.unwrap(), LEFT);
+            }
+            if tp.is_some() {
+                return (tp.unwrap(), TOP);
+            }
+            (*curr_pos, curr_dir)
+        }
+        _ => (*curr_pos, curr_dir),
+    }
+
+         */
+}
+
+fn is_not_wall_or_out_move(grid: &Grid<char>, position: &Option<Position>) -> bool {
+    match position {
+        Some(p) => {
+            let c = grid.get(p.row, p.col);
+            !matches!(c, Some('#'))
+        }
+        _ => false,
+    }
+}
 
 //int cost, int r, int c, int dr, int dc
 #[derive(Hash, Debug, Clone, Copy, PartialEq, Eq)]
