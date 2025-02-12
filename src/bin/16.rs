@@ -18,11 +18,8 @@ struct Position {
     row: isize,
     col: isize,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-struct Facing {
-    row: isize,
-    col: isize,
-}
+
+type Facing = (i32, i32);
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
 struct Visited {
     position: Position,
@@ -38,7 +35,7 @@ struct Neighbors {
 }
 
 const NEIGHBOR_OFFSETS: [(i32, i32); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
-const UP: (i32, i32) = (-1, 0); 
+const UP: (i32, i32) = (-1, 0);
 const RIGHT: (i32, i32) = (0, 1);
 const DOWN: (i32, i32) = (1, 0);
 const LEFT: (i32, i32) = (0, -1);
@@ -77,18 +74,38 @@ pub fn part_two(input: &str) -> Option<u32> {
         })
     });
     // queue of positions to process
-    let mut q: Vec<(Position, Facing)> = vec![(start_location, Facing { row: 0, col: 1 })];
-    let mut all_costs: HashMap<(Position,Position), Cost> = HashMap::new();
-    all_costs.insert((start_location, start_location), 0);
-    
-    while let Some((_current_location, _current_facing)) = q.pop(){
-        let curr_cost = all_costs.entry((_current_location,_current_location)).or_insert(isize::MAX);
-        let new_points:Vec<(Position,Facing)> = Vec::new();
-        if _current_facing == Facing {}
+    let mut q: Vec<(Position, Facing)> = vec![(start_location, RIGHT)];
+    let mut all_costs: HashMap<(Position, Facing), Cost> = HashMap::new();
+    all_costs.insert((start_location, DOWN), 0);
+
+    while let Some((_current_location, _current_facing)) = q.pop() {
+        let curr_cost = all_costs
+            .entry((_current_location, _current_facing))
+            .or_insert(isize::MAX);
+        let mut new_points: HashMap<(Position, Facing), Cost> = HashMap::new();
+        if _current_facing == DOWN || _current_facing == UP {
+            new_points.insert((_current_location, RIGHT), 1000);
+            new_points.insert((_current_location, LEFT), 1000);
+        }
+        if _current_facing == RIGHT || _current_facing == LEFT {
+            new_points.insert((_current_location, UP), 1000);
+            new_points.insert((_current_location, DOWN), 1000);
+        }
+        let same_direction_pos = calc_position(_current_facing, _current_location).unwrap();
+        new_points.insert((same_direction_pos, _current_facing), 1);
+        for (new_state, cost_incr) in new_points.iter() {
+            let (pp, new_fac) = new_state;
+            let c = grid.get(pp.row, pp.col).unwrap();
+            if *c == '#' {
+                continue;
+            }
+//            let new_cost = *curr_cost + *cost_incr;
+            let check_cost = all_costs.get(&(*pp, *new_fac));
+            
+        }
     }
     None
 }
-
 
 //int cost, int r, int c, int dr, int dc
 #[derive(Hash, Debug, Clone, Copy, PartialEq, Eq)]
