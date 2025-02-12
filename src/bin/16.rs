@@ -73,8 +73,37 @@ pub fn part_two(input: &str) -> Option<u32> {
             *g = c;
         })
     });
-
-
+    let mut pq: DoublePriorityQueue<QueueEntry, Cost> = DoublePriorityQueue::new();
+    let initial_entry = QueueEntry {
+        cost: 0,
+        location_entry: LocationEntry {
+            position: start_location,
+            d_position: Position { row: 0, col: 1 },
+        },
+    };
+    pq.push(initial_entry, 0);
+    let mut lowest_cost: HashMap<LocationEntry, Cost> = HashMap::new();
+    lowest_cost.insert(
+        LocationEntry {
+            position: start_location,
+            d_position: Position { row: 0, col: 1 },
+        },
+        0,
+    );
+    let back_track: HashMap<LocationEntry, HashSet<LocationEntry>> = HashMap::new();
+    let end_state:HashSet<LocationEntry> = HashSet::new();
+    let best_cost = isize::MAX;
+    while let Some((state,cost)) = pq.pop_min() {
+        let current_cost = state.cost;
+        let r = state.location_entry.position.row;
+        let c = state.location_entry.position.col;
+        let dr = state.location_entry.d_position.row;
+        let dc = state.location_entry.d_position.col;
+        
+        if current_cost > *lowest_cost.get(&state.location_entry).unwrap_or(&isize::MAX){
+            continue;
+        }
+    }
     None
 }
 
@@ -141,9 +170,9 @@ pub fn part_two_from_python(input: &str) -> Option<u32> {
         }
     }
     let mut lowest = isize::MAX;
-    let mut end_fac = (0,0);
+    let mut end_fac = (0, 0);
     for e in all_costs {
-        let ((position,facing), cost) = e;
+        let ((position, facing), cost) = e;
         if position == end_location && cost < lowest {
             lowest = cost;
             end_fac = facing;
@@ -308,5 +337,4 @@ mod tests {
         let result = part_two_from_python(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
     }
-
 }
