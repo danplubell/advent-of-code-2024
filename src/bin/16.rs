@@ -73,13 +73,45 @@ pub fn part_two(input: &str) -> Option<u32> {
             *g = c;
         })
     });
+
+
+    None
+}
+
+// This example is from a python solution.  It is off by 1000 points somewhere
+pub fn part_two_from_python(input: &str) -> Option<u32> {
+    let grid_rows = input.lines().count();
+    let grid_cols = input.lines().next().unwrap().len();
+    let mut grid: Grid<char> = Grid::new(grid_rows, grid_cols);
+    let mut start_location = Position { row: 0, col: 0 };
+    let mut end_location = Position { row: 0, col: 0 };
+
+    // put stuff in grid
+    input.lines().enumerate().for_each(|(row, l)| {
+        l.chars().enumerate().for_each(|(col, c)| {
+            let g = grid.get_mut(row, col).unwrap();
+            if c == 'S' {
+                start_location = Position {
+                    row: row as isize,
+                    col: col as isize,
+                }
+            }
+            if c == 'E' {
+                end_location = Position {
+                    row: row as isize,
+                    col: col as isize,
+                }
+            }
+            *g = c;
+        })
+    });
     // queue of positions to process
-    let mut q: Vec<(Position, Facing)> = vec![(start_location, RIGHT)];
+    let mut q: Vec<(Position, Facing)> = vec![(start_location, DOWN)];
     let mut all_costs: HashMap<(Position, Facing), Cost> = HashMap::new();
     all_costs.insert((start_location, DOWN), 0);
 
     while let Some((_current_location, _current_facing)) = q.pop() {
-        let curr_cost = all_costs
+        let curr_cost = *all_costs
             .entry((_current_location, _current_facing))
             .or_insert(isize::MAX);
         let mut new_points: HashMap<(Position, Facing), Cost> = HashMap::new();
@@ -88,8 +120,8 @@ pub fn part_two(input: &str) -> Option<u32> {
             new_points.insert((_current_location, LEFT), 1000);
         }
         if _current_facing == RIGHT || _current_facing == LEFT {
-            new_points.insert((_current_location, UP), 1000);
             new_points.insert((_current_location, DOWN), 1000);
+            new_points.insert((_current_location, UP), 1000);
         }
         let same_direction_pos = calc_position(_current_facing, _current_location).unwrap();
         new_points.insert((same_direction_pos, _current_facing), 1);
@@ -99,11 +131,25 @@ pub fn part_two(input: &str) -> Option<u32> {
             if *c == '#' {
                 continue;
             }
-//            let new_cost = *curr_cost + *cost_incr;
+            let new_cost = curr_cost + *cost_incr;
             let check_cost = all_costs.get(&(*pp, *new_fac));
-            
+            if check_cost.is_some() && check_cost.unwrap() <= &new_cost {
+                continue;
+            }
+            all_costs.insert((*pp, *new_fac), new_cost);
+            q.push((*pp, *new_fac));
         }
     }
+    let mut lowest = isize::MAX;
+    let mut end_fac = (0,0);
+    for e in all_costs {
+        let ((position,facing), cost) = e;
+        if position == end_location && cost < lowest {
+            lowest = cost;
+            end_fac = facing;
+        }
+    }
+    println!("lowest: {} {:?}", lowest, end_fac);
     None
 }
 
@@ -257,4 +303,10 @@ mod tests {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
     }
+    #[test]
+    fn test_part_two_python() {
+        let result = part_two_from_python(&advent_of_code::template::read_file("examples", DAY));
+        assert_eq!(result, None);
+    }
+
 }
