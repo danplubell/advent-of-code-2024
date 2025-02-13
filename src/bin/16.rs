@@ -46,7 +46,9 @@ fn calc_position(offset: (i32, i32), position: Position) -> Option<Position> {
         col: position.col.checked_add(offset.1 as isize)?,
     })
 }
-
+/*
+Solution for Part 2 came from https://github.com/grant-dot-dev/advent_of_code_2024/tree/main/Day16/Day16_Csharp
+ */
 pub fn part_two(input: &str) -> Option<u32> {
     let grid_rows = input.lines().count();
     let grid_cols = input.lines().next().unwrap().len();
@@ -90,23 +92,91 @@ pub fn part_two(input: &str) -> Option<u32> {
         },
         0,
     );
-    let back_track: HashMap<LocationEntry, HashSet<LocationEntry>> = HashMap::new();
-    let end_state:HashSet<LocationEntry> = HashSet::new();
-    let best_cost = isize::MAX;
-    while let Some((state,cost)) = pq.pop_min() {
+    let mut back_track: HashMap<LocationEntry, HashSet<LocationEntry>> = HashMap::new();
+    let mut end_states: HashSet<LocationEntry> = HashSet::new();
+    let mut best_cost = isize::MAX;
+    while let Some((state, cost)) = pq.pop_min() {
         let current_cost = state.cost;
-        let r = state.location_entry.position.row;
-        let c = state.location_entry.position.col;
+        let row = state.location_entry.position.row;
+        let col = state.location_entry.position.col;
         let dr = state.location_entry.d_position.row;
         let dc = state.location_entry.d_position.col;
-        
-        if current_cost > *lowest_cost.get(&state.location_entry).unwrap_or(&isize::MAX){
+
+        if current_cost
+            > *lowest_cost
+                .get(&state.location_entry)
+                .unwrap_or(&isize::MAX)
+        {
             continue;
         }
+        if current_cost
+            > *lowest_cost
+                .get(&state.location_entry)
+                .unwrap_or(&isize::MAX)
+        {
+            continue;
+        }
+        let c = grid.get(row, col).unwrap();
+        if *c == 'E' {
+            if current_cost > best_cost {
+                break;
+            }
+            best_cost = current_cost;
+            end_states.insert(state.location_entry);
+        }
+        let directions: Vec<QueueEntry> = vec![
+            QueueEntry::from(current_cost + 1, row + dr, col + dc, dr, dc),
+            QueueEntry::from(current_cost + 1000, row, col, dc, -dr),
+            QueueEntry::from(current_cost + 1000, row, col, -dc, dr),
+        ];
+        directions.iter().for_each(|entry| {
+            let is_valid = is_valid(&entry.location_entry.position, grid_rows, grid_cols);
+            let c = grid.get_mut(row, col).unwrap();
+            if !is_valid || *c == '#' {
+                return;
+            }
+            let new_key = entry.location_entry;
+            let lowest = lowest_cost.get(&new_key).unwrap_or(&isize::MAX);
+            if entry.cost > *lowest {
+                return;
+            }
+            if entry.cost < *lowest {
+                back_track.insert(new_key, HashSet::new());
+                lowest_cost.insert(new_key, entry.cost);
+            }
+            back_track.entry(new_key).and_modify(|e| {
+                e.insert(state.location_entry);
+            });
+            pq.push(*entry, entry.cost);
+        })
     }
-    None
+    let mut states: Vec<&LocationEntry> = end_states.iter().collect::<Vec<_>>();
+    let mut seen = end_states.iter().collect::<HashSet<_>>();
+    while !states.is_empty() {
+        let key = states.pop()?;
+        let previous_state = back_track.get(key);
+        if let Some(previous_state) = previous_state {
+            previous_state.iter().for_each(|entry| {
+                if !seen.contains(entry) {
+                    seen.insert(entry);
+                    states.push(entry);
+                }
+            })
+        }
+    }
+    let mut unique_positions:HashSet<Position> = HashSet::new();
+    seen.iter().for_each(|entry| {
+        unique_positions.insert(entry.position);
+    });
+    println!("unique positions: {:?}", unique_positions.len());
+    Some(unique_positions.len() as u32)
 }
-
+fn is_valid(position: &Position, rows: usize, cols: usize) -> bool {
+    position.row >= 0
+        && position.row < rows as isize
+        && position.col >= 0
+        && position.col < cols as isize
+}
 // This example is from a python solution.  It is off by 1000 points somewhere
 pub fn part_two_from_python(input: &str) -> Option<u32> {
     let grid_rows = input.lines().count();
@@ -187,6 +257,17 @@ pub fn part_two_from_python(input: &str) -> Option<u32> {
 struct QueueEntry {
     cost: Cost,
     location_entry: LocationEntry,
+}
+impl QueueEntry {
+    pub fn from(cost: Cost, r: isize, c: isize, dr: isize, dc: isize) -> Self {
+        QueueEntry {
+            cost,
+            location_entry: LocationEntry {
+                position: Position { row: r, col: c },
+                d_position: Position { row: dr, col: dc },
+            },
+        }
+    }
 }
 #[derive(Hash, Debug, Clone, Copy, PartialEq, Eq)]
 struct LocationEntry {
