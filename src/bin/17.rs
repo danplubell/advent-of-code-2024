@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 advent_of_code::solution!(17);
 
 fn parse_register(s: &str) -> Register {
@@ -94,7 +96,6 @@ fn process_instruction(
     program: &Vec<Instruction>,
     out_buffer: &mut Vec<OutValue>,
 ) -> Option<MachineState> {
-    println!("instruction: {:?}", program.get(state.ip));
     if let Some(opcode) = program.get(state.ip) {
         return match opcode {
             0 => adv(state),
@@ -193,8 +194,63 @@ fn get_operand_value(state: &MachineState) -> Operand {
     }
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u64> {
+    let mut register_a: Register = 0_u64;
+    let mut register_b: Register = 0_u64;
+    let mut register_c: Register = 0_u64;
+    let mut program: Vec<Instruction> = Vec::new();
+    let mut out_buffer: Vec<OutValue> = Vec::new();
+    input.lines().for_each(|l| {
+        if l.contains("Register A:") {
+            register_a = parse_register(l.trim());
+        }
+        if l.contains("Register B:") {
+            register_b = parse_register(l.trim());
+        }
+        if l.contains("Register C:") {
+            register_c = parse_register(l.trim());
+        }
+        if l.contains("Program:") {
+            parse_program(l.trim(), &mut program);
+        }
+    });
+    let mut queue:VecDeque<(usize, i32)> = VecDeque::from([(program.len()-1, 0)]);
+    let mut final_value:Register = 0;
+    while !queue.is_empty() {
+        let (offset,value) = queue.pop_front().unwrap();
+        for i in 0..8 {
+            let new_value = (value << 3) + i;
+            let mut state: MachineState = MachineState {
+                ra: new_value as Register,
+                rb: register_b,
+                rc: register_c,
+                ip: 0,
+                operand: 0,
+                opcode: 0,
+            };
+            out_buffer = Vec::new();
+            while state.ip < program.len() {
+                let opcode = program.get(state.ip)?;
+                let operand = program.get(state.ip + 1)?;
+                state.opcode = *opcode;
+                state.operand = *operand;
+                state = process_instruction(&state, &program, &mut out_buffer)?;
+            }
+            let program_slice = program[offset..].to_vec();
+
+            if out_buffer == program_slice {
+                println!("{} {} {:?} {:?}", new_value, offset, program_slice, out_buffer);
+
+                if offset == 0 {
+                    final_value = new_value as Register;
+                    break;
+                }
+                queue.push_back((offset - 1, new_value));
+            }
+        }
+    }
+    
+    Some(final_value)
 }
 
 #[cfg(test)]
