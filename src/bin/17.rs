@@ -1,18 +1,18 @@
 advent_of_code::solution!(17);
 
-fn parse_register(s: &str) -> i32 {
+fn parse_register(s: &str) -> Register {
     let parts = s.split(' ').collect::<Vec<&str>>();
     assert_eq!(parts.len(), 3);
     parts[2].parse().unwrap()
 }
-fn parse_program(s: &str, program: &mut Vec<(i32, i32)>) {
+fn parse_program(s: &str, program: &mut Vec<(Opcode, Operand)>) {
     let parts = s.split(' ').collect::<Vec<&str>>();
     assert_eq!(parts.len(), 2);
     parts[1]
         .split(',')
         .collect::<Vec<&str>>()
         .chunks(2)
-        .map(|s| (s[0].parse::<i32>().ok(), s[1].parse::<i32>().ok()))
+        .map(|s| (s[0].parse::<Opcode>().ok(), s[1].parse::<Operand>().ok()))
         .collect::<Vec<_>>()
         .iter()
         .for_each(|(s, c)| {
@@ -21,14 +21,18 @@ fn parse_program(s: &str, program: &mut Vec<(i32, i32)>) {
             }
         });
 }
+type Register = u64;
+type Operand = u64;
+type Opcode = u64;
+type OutValue = u64;
+type InstructionPointer = usize;
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut register_a = 0_i32;
-    let mut register_b = 0_i32;
-    let mut register_c = 0_i32;
+    let mut register_a:Register = 0_u64;
+    let mut register_b:Register = 0_u64;
+    let mut register_c:Register = 0_u64;
     let mut program = Vec::new();
-    let mut i_ptr: usize = 0;
-    let mut out_buffer: Vec<i32> = Vec::new();
+    let mut out_buffer: Vec<OutValue> = Vec::new();
     input.lines().for_each(|l| {
         if l.contains("Register A:") {
             register_a = parse_register(l.trim());
@@ -47,87 +51,106 @@ pub fn part_one(input: &str) -> Option<u32> {
     println!("Register B: {}", register_b);
     println!("Register C: {}", register_c);
     println!("Program: {:?}", program);
-    while i_ptr < program.len() {
-        i_ptr = process_instruction(
-            &mut register_a,
-            &mut register_b,
-            &mut register_c,
-            &mut i_ptr,
+    let mut state: MachineState = MachineState {
+        ra: 0,
+        rb: 0,
+        rc: 0,
+        ip: 0,
+        operand: 0,
+        opcode: 0,
+    };
+    while state.ip < program.len() {
+        state = process_instruction(
+            &state,
             &program,
             &mut out_buffer,
         )?;
     }
     None
 }
+#[derive(Debug, Clone, PartialEq)]
+struct MachineState {
+    ra: Register,
+    rb: Register,
+    rc: Register,
+    ip: InstructionPointer,
+    operand: Operand,
+    opcode: Opcode,
+}
+
 
 fn process_instruction(
-    ra: &mut i32,
-    rb: &mut i32,
-    rc: &mut i32,
-    i_ptr: &mut usize,
-    program: &[(i32, i32)],
-    out_buffer: &mut Vec<i32>,
-) -> Option<usize> {
-    println!("instruction: {:?}", program.get(*i_ptr));
+    state: &MachineState,
+    program: &Vec<(Opcode,Operand)>,
+    out_buffer: &mut Vec<OutValue>,
+) -> Option<MachineState> {
+    println!("instruction: {:?}", program.get(state.ip));
     
-     if let Some((opcode,operand)) =  program.get(*i_ptr){
+     if let Some((opcode,operand)) =  program.get(state.ip) {
          return match opcode {
-            0 => adv(ra, rb, rc, operand,i_ptr),
-            1 => bxl(ra, rb, rc, operand,*i_ptr),
-            2 => bst(ra, rb, rc, operand,*i_ptr),
-            3 => jnx(ra, rb, rc, operand,*i_ptr),
-            4 => bxc(ra, rb, rc, operand,*i_ptr),
-            5 => out(ra, rb, rc, operand, out_buffer, *i_ptr),
-            6 => bdv(ra, rb, rc, operand,*i_ptr),
-            7 => cdv(ra, rb, rc, operand,*i_ptr),
+            0 => adv(state),
+            1 => bxl(state),
+            2 => bst(state),
+            3 => jnx(state),
+            4 => bxc(state),
+            5 => out(state, out_buffer),
+            6 => bdv(state),
+            7 => cdv(state),
             _ => None
         };
     };
     None
 }
 
-fn cdv(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: usize) -> Option<usize> {
+fn cdv(p0: &MachineState) -> Option<MachineState> {
     todo!()
 }
 
-fn bdv(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: usize) -> Option<usize> {
+fn bdv(p0: &MachineState) -> Option<MachineState> {
     todo!()
 }
 
-fn out(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: &mut Vec<i32>, p5: usize) -> Option<usize> {
+fn out(state: &MachineState, out_buffer: &mut Vec<OutValue>) -> Option<MachineState> {
+    let v = get_operand_value(state);
+    let out_v = v%8;
+    let mut new_state = state.clone();
+    new_state.ip += 1;
+    out_buffer.push(out_v);
+    Some(new_state)
+}
+
+fn bxc(p0: &MachineState) -> Option<MachineState> {
     todo!()
 }
 
-fn bxc(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: usize) -> Option<usize> {
+fn jnx(p0: &MachineState) -> Option<MachineState> {
     todo!()
 }
 
-fn jnx(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: usize) -> Option<usize> {
+fn bst(p0: &MachineState) -> Option<MachineState> {
     todo!()
 }
 
-fn bst(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: usize) -> Option<usize> {
+fn bxl(p0: &MachineState) -> Option<MachineState> {
     todo!()
 }
 
-fn bxl(p0: &mut i32, p1: &mut i32, p2: &mut i32, p3: &i32, p4: usize) -> Option<usize> {
-    todo!()
+fn adv(state: &MachineState) -> Option<MachineState> {
+    let value = get_operand_value(state);
+    let new_ra = state.ra/(2^value);
+    let mut new_state = state.clone();
+    new_state.ra = new_ra;
+    new_state.ip += 1;
+    Some(new_state)
 }
 
-fn adv(ra: &mut i32, rb: &mut i32, rc: &mut i32, operand: &i32, i_ptr: &mut usize) -> Option<usize> {
-    let value = get_operand_value(*operand, *ra, *rb, *rc)?;
-    ra = 1;//ra/(2^value)
-    let i = *i_ptr;
-    Some(i + 1)
-}
-
-fn get_operand_value(operand: i32 , ra: i32, rb: i32, rc: i32) -> Option<i32> {
-    match operand {
-        0_i32..=3_i32=> Some(operand),
-        4 => Some(ra),
-        5 => Some(rb),
-        6 => Some(rc),
-        _ => None
+fn get_operand_value(state: &MachineState) -> Operand {
+    match state.operand {
+        0..=3=> state.operand,
+        4 => state.ra,
+        5 => state.rb,
+        6 => state.rc,
+        _ => unreachable!()
     }
 }
 
