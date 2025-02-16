@@ -5,7 +5,7 @@ fn parse_register(s: &str) -> Register {
     assert_eq!(parts.len(), 3);
     parts[2].parse().unwrap()
 }
-fn parse_program(s: &str, program: &mut Vec<(Opcode, Operand)>) {
+fn parse_program(s: &str, program: &mut Vec<Instruction>) {
     let parts = s.split(' ').collect::<Vec<&str>>();
     assert_eq!(parts.len(), 2);
     parts[1]
@@ -17,7 +17,8 @@ fn parse_program(s: &str, program: &mut Vec<(Opcode, Operand)>) {
         .iter()
         .for_each(|(s, c)| {
             if let (Some(s), Some(c)) = (s, c) {
-                program.push((*s, *c));
+                program.push(*s);
+                program.push(*c);
             }
         });
 }
@@ -26,12 +27,14 @@ type Operand = u64;
 type Opcode = u64;
 type OutValue = u64;
 type InstructionPointer = usize;
+type Instruction = u64;
+const INSTRUCTION_SIZE: usize = 2_usize;
 
-pub fn part_one(input: &str) -> Option<u32> {
-    let mut register_a:Register = 0_u64;
-    let mut register_b:Register = 0_u64;
-    let mut register_c:Register = 0_u64;
-    let mut program = Vec::new();
+pub fn part_one(input: &str) -> Option<String> {
+    let mut register_a: Register = 0_u64;
+    let mut register_b: Register = 0_u64;
+    let mut register_c: Register = 0_u64;
+    let mut program: Vec<Instruction> = Vec::new();
     let mut out_buffer: Vec<OutValue> = Vec::new();
     input.lines().for_each(|l| {
         if l.contains("Register A:") {
@@ -52,21 +55,29 @@ pub fn part_one(input: &str) -> Option<u32> {
     println!("Register C: {}", register_c);
     println!("Program: {:?}", program);
     let mut state: MachineState = MachineState {
-        ra: 0,
-        rb: 0,
-        rc: 0,
+        ra: register_a,
+        rb: register_b,
+        rc: register_c,
         ip: 0,
         operand: 0,
         opcode: 0,
     };
     while state.ip < program.len() {
-        state = process_instruction(
-            &state,
-            &program,
-            &mut out_buffer,
-        )?;
+        let opcode = program.get(state.ip)?;
+        let operand = program.get(state.ip + 1)?;
+        state.opcode = *opcode;
+        state.operand = *operand;
+        state = process_instruction(&state, &program, &mut out_buffer)?;
     }
-    None
+    println!("out: {:?}", out_buffer);
+    let out_str = out_buffer
+        .iter()
+        .map(|o| (*o).to_string())
+        .collect::<Vec<String>>()
+        .join(",");
+    println!("out: {}", out_str);
+
+    Some(out_str)
 }
 #[derive(Debug, Clone, PartialEq)]
 struct MachineState {
@@ -78,16 +89,14 @@ struct MachineState {
     opcode: Opcode,
 }
 
-
 fn process_instruction(
     state: &MachineState,
-    program: &Vec<(Opcode,Operand)>,
+    program: &Vec<Instruction>,
     out_buffer: &mut Vec<OutValue>,
 ) -> Option<MachineState> {
     println!("instruction: {:?}", program.get(state.ip));
-    
-     if let Some((opcode,operand)) =  program.get(state.ip) {
-         return match opcode {
+    if let Some(opcode) = program.get(state.ip) {
+        return match opcode {
             0 => adv(state),
             1 => bxl(state),
             2 => bst(state),
@@ -96,61 +105,91 @@ fn process_instruction(
             5 => out(state, out_buffer),
             6 => bdv(state),
             7 => cdv(state),
-            _ => None
+            _ => None,
         };
     };
     None
 }
 
-fn cdv(p0: &MachineState) -> Option<MachineState> {
-    todo!()
+fn cdv(state: &MachineState) -> Option<MachineState> {
+    let value = get_operand_value(state);
+    let new_rc = state.ra / (2_u64.pow(value as u32));
+    let mut new_state = state.clone();
+    new_state.rc = new_rc;
+    new_state.ip += INSTRUCTION_SIZE;
+    Some(new_state)
 }
 
-fn bdv(p0: &MachineState) -> Option<MachineState> {
-    todo!()
+fn bdv(state: &MachineState) -> Option<MachineState> {
+    let value = get_operand_value(state);
+    let new_rb = state.ra / (2_u64.pow(value as u32));
+    let mut new_state = state.clone();
+    new_state.rb = new_rb;
+    new_state.ip += INSTRUCTION_SIZE;
+    Some(new_state)
 }
 
 fn out(state: &MachineState, out_buffer: &mut Vec<OutValue>) -> Option<MachineState> {
     let v = get_operand_value(state);
-    let out_v = v%8;
+    let out_v = v % 8;
     let mut new_state = state.clone();
-    new_state.ip += 1;
+    new_state.ip += INSTRUCTION_SIZE;
     out_buffer.push(out_v);
     Some(new_state)
 }
 
-fn bxc(p0: &MachineState) -> Option<MachineState> {
-    todo!()
+fn bxc(state: &MachineState) -> Option<MachineState> {
+    let mut new_state = state.clone();
+    let v = state.rb ^ state.rc;
+    new_state.rb = v;
+    new_state.ip += INSTRUCTION_SIZE;
+    Some(new_state)
 }
 
-fn jnx(p0: &MachineState) -> Option<MachineState> {
-    todo!()
+fn jnx(state: &MachineState) -> Option<MachineState> {
+    let mut new_state = state.clone();
+    if state.ra == 0 {
+        new_state.ip += INSTRUCTION_SIZE;
+    } else {
+        new_state.ip = new_state.operand as InstructionPointer;
+    }
+    Some(new_state)
 }
 
-fn bst(p0: &MachineState) -> Option<MachineState> {
-    todo!()
+fn bst(state: &MachineState) -> Option<MachineState> {
+    let mut new_state = state.clone();
+    let v = get_operand_value(state);
+    let new_rb = v % 8;
+    new_state.rb = new_rb;
+    new_state.ip += INSTRUCTION_SIZE;
+    Some(new_state)
 }
 
-fn bxl(p0: &MachineState) -> Option<MachineState> {
-    todo!()
+fn bxl(state: &MachineState) -> Option<MachineState> {
+    let mut new_state = state.clone();
+    let v = state.operand;
+    let new_rb = v ^ state.rb;
+    new_state.rb = new_rb;
+    new_state.ip += INSTRUCTION_SIZE;
+    Some(new_state)
 }
 
 fn adv(state: &MachineState) -> Option<MachineState> {
     let value = get_operand_value(state);
-    let new_ra = state.ra/(2^value);
+    let new_ra = state.ra / (2_u64.pow(value as u32));
     let mut new_state = state.clone();
     new_state.ra = new_ra;
-    new_state.ip += 1;
+    new_state.ip += INSTRUCTION_SIZE;
     Some(new_state)
 }
 
 fn get_operand_value(state: &MachineState) -> Operand {
     match state.operand {
-        0..=3=> state.operand,
+        0..=3 => state.operand,
         4 => state.ra,
         5 => state.rb,
         6 => state.rc,
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
