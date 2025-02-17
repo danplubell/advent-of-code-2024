@@ -194,6 +194,45 @@ fn get_operand_value(state: &MachineState) -> Operand {
     }
 }
 
+fn find(target: Vec<OutValue>, ans: Register, program: &Vec<Instruction>) -> Option<Register> {
+    if target.is_empty() {
+        return Some(ans);
+    }
+    for t in 0..8 {
+        let a =  ans <<3 | t;
+        let mut state: MachineState = MachineState {
+            ra: a,
+            rb: 0,
+            rc: 0,
+            ip: 0,
+            operand: 0,
+            opcode: 0,
+        };
+        while state.ip < program.len() - 2 {
+            let mut out_buffer = Vec::new();
+            let opcode = program.get(state.ip)?;
+            let operand = program.get(state.ip + 1)?;
+            state.opcode = *opcode;
+            state.operand = *operand;
+            state = process_instruction(&state, &program, &mut out_buffer)?;
+            if !out_buffer.is_empty() && !target.is_empty(){
+                let last = target.last()?;
+                let out = out_buffer.last()?;
+                if  out == last {
+                    let (next_target,_)  = target.split_at(target.len()-1);
+                    let sub = find(next_target.to_vec(), a, program );
+                    if sub.is_none() {
+                        continue;
+                    }
+                    return sub
+                }
+            }
+        }
+    }
+    None
+
+}
+// derived from https://github.com/hyperneutrino/advent-of-code/blob/main/2024/day17p2.py
 pub fn part_two(input: &str) -> Option<u64> {
     let mut register_a: Register = 0_u64;
     let mut register_b: Register = 0_u64;
@@ -214,44 +253,11 @@ pub fn part_two(input: &str) -> Option<u64> {
             parse_program(l.trim(), &mut program);
         }
     });
-    let mut queue:VecDeque<(usize, i32)> = VecDeque::from([(program.len()-1, 0)]);
-    let mut final_value:Register = 0;
-    while !queue.is_empty() {
-        let (offset,value) = queue.pop_front().unwrap();
-        for i in 0..8 {
-            let new_value = (value << 3) + i;
-            let mut state: MachineState = MachineState {
-                ra: new_value as Register,
-                rb: register_b,
-                rc: register_c,
-                ip: 0,
-                operand: 0,
-                opcode: 0,
-            };
-            out_buffer = Vec::new();
-            while state.ip < program.len() {
-                let opcode = program.get(state.ip)?;
-                let operand = program.get(state.ip + 1)?;
-                state.opcode = *opcode;
-                state.operand = *operand;
-                state = process_instruction(&state, &program, &mut out_buffer)?;
-            }
-            let program_slice = program[offset..].to_vec();
-
-            if out_buffer == program_slice {
-                println!("{} {} {:?} {:?}", new_value, offset, program_slice, out_buffer);
-
-                if offset == 0 {
-                    final_value = new_value as Register;
-                    break;
-                }
-                queue.push_back((offset - 1, new_value));
-            }
-        }
-    }
-    
-    Some(final_value)
+    let a = find(program.clone(),0, &program);
+    println!("{:?}", a);
+    a
 }
+
 
 #[cfg(test)]
 mod tests {
