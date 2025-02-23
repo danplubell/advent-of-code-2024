@@ -1,45 +1,57 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use grid::Grid;
 
 advent_of_code::solution!(18);
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let s: i32 = 70;
-    let mut grid: Grid<i32> = Grid::new((s + 1) as usize, (s + 1) as usize);
-    grid.fill_with(|| 0);
-    input.lines().take(1024).for_each(|line| {
-        let s = line.split(',').collect::<Vec<&str>>();
-        let c = s.first().unwrap().parse::<i32>().unwrap();
-        let r = s.last().unwrap().parse::<i32>().unwrap();
-        grid[(r as usize, c as usize)] = 1;
-    });
+    const GRID_SIZE: usize = 71; // s + 1 as usize
 
-    let mut q: VecDeque<(i32, i32, i32)> = VecDeque::from([(0, 0, 0)]);
-    let mut seen: Vec<(i32, i32)> = Vec::from([(0, 0)]);
-    while let Some((r, c, d)) = q.pop_front() {
-        for (nr, nc) in [(r + 1, c), (r, c + 1), (r - 1, c), (r, c - 1)] {
-            if nr < 0 || nc < 0 || nr > s || nc > s {
+    // Initialize grid and fill with zeros
+    let mut grid = Grid::new(GRID_SIZE, GRID_SIZE);
+    grid.fill_with(|| 0);
+
+    // Parse input and mark grid points
+    for line in input.lines().take(1024) {
+        if let Some((c_str, r_str)) = line.split_once(',') {
+            if let (Ok(c), Ok(r)) = (c_str.parse::<usize>(), r_str.parse::<usize>()) {
+                grid[(r, c)] = 1;
+            }
+        }
+    }
+
+    // BFS to find shortest path
+    let mut queue = VecDeque::from([(0, 0, 0)]);
+    let mut visited = HashSet::from([(0, 0)]);
+
+    while let Some((r, c, distance)) = queue.pop_front() {
+        // Check all four directions
+        for (dr, dc) in [(1, 0), (0, 1), (-1, 0), (0, -1)] {
+            let (nr, nc) = (r + dr, c + dc);
+
+            // Skip if out of bounds
+            if nr < 0 || nc < 0 || nr >= GRID_SIZE as i32 || nc >= GRID_SIZE as i32 {
                 continue;
             }
-            if grid[(nr as usize, nc as usize)] == 1 {
+
+            let (nr, nc) = (nr as usize, nc as usize);
+
+            // Skip if it's a blocked cell or already visited
+            if grid[(nr, nc)] == 1 || !visited.insert((nr as i32, nc as i32)) {
                 continue;
             }
-            if seen.contains(&(nr, nc)) {
-                continue;
+
+            // Found the target
+            if nr == GRID_SIZE - 1 && nc == GRID_SIZE - 1 {
+                return Some((distance + 1) as u32);
             }
-            
-            if nr == s && nc == s {
-                return Some((d + 1) as u32);
-            }
-            seen.push((nr, nc));
-            let mut b:VecDeque<_> = [(nr, nc, d + 1)].into();
-            q.append(&mut b);
+
+            // Add to queue
+            queue.push_back((nr as i32, nc as i32, distance + 1));
         }
     }
 
     None
 }
-
 pub fn part_two(input: &str) -> Option<u32> {
     None
 }
