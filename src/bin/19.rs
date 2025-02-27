@@ -14,7 +14,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     
      */
 //    println!("dictionary {:?}", dictionary);
-
+    
     input.lines().skip(2).for_each(|w| {
         let result = tokenize_with_trie(w, &split_words);
         println!("{:?} {:?}", w, result);
@@ -149,7 +149,7 @@ fn find_words(
             node = next_node;
             if node.is_word {
                 path.push(s[pos..=i].to_string());
-                find_words(s, i + 1, path, result, &trie);
+                find_words(s, i + 1, path, result, trie);
                 path.pop();
             }
         } else {
