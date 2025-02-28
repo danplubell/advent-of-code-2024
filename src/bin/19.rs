@@ -1,5 +1,59 @@
 advent_of_code::solution!(19);
+
 pub fn part_one(input: &str) -> Option<u32> {
+    let words = input.lines().next().unwrap();
+    let word_list = words.split(", ").collect::<Vec<_>>();
+    let mut total = 0;
+    let mut dictionary: HashMap<char, Vec<&str>> = HashMap::new();
+    println!("dictionary {:?}", dictionary);
+
+    for word in word_list {
+        let c = word.chars().next().unwrap();
+        let list = dictionary.entry(c).or_default();
+        list.push(word);
+    }
+    
+    input.lines().skip(2).for_each(|w| {
+        if validate_design(w, &dictionary) {
+            println!("{}", w);
+            total += 1
+        }
+    });
+
+    Some(total)
+}
+fn validate_design(w: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool {
+    let mut pos: usize = 0;
+    let mut design_valid = false;
+    while pos < w.len() {
+        let c = match w.chars().nth(pos) {
+            Some(c) => c,
+            None => {
+                return design_valid;
+            }
+        };
+        let towels = match dictionary.get(&c) {
+            Some(towels) => towels,
+            None => return design_valid,
+        };
+        for towel in towels {
+            let range = pos..pos + towel.len();
+            let slice_opt = &w.get(range);
+            let slice = match slice_opt {
+                Some(slice) => slice,
+                None=> return design_valid
+            };
+            if *slice == *towel {
+                pos += towel.len() -1;
+                design_valid = true;
+                break;
+            }
+        };
+        pos += 1;
+    }
+    design_valid
+}
+pub fn part_one1(input: &str) -> Option<u32> {
     let words = input.lines().next().unwrap();
     let dictionary = words.split(", ").collect::<Vec<_>>();
     let mut total = 0;
@@ -21,16 +75,17 @@ pub fn part_one(input: &str) -> Option<u32> {
     println!("trie: {:?}", trie);
     input.lines().skip(2).for_each(|w| {
         let mut pos = 0;
-        let mut valid:Option<usize> = None;
+        let mut valid: Option<usize> = None;
         loop {
-            valid = validate_design(w, &trie.root, pos);
+            valid = validate_design2(w, &trie.root, pos);
             if valid.is_none() {
-               break;
-            }
-            pos = valid.unwrap();
-            if pos >= w.len(){
+                if pos >= w.len() {
+                    println!("w={:?}", w);
+                    total += 1;
+                }
                 break;
             }
+            pos = valid.unwrap();
             pos += 1;
         }
         if let Some(pos) = valid {
@@ -41,19 +96,15 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(total)
 }
 
-fn validate_design(design: &str, node: &TrieNode, pos: usize) -> Option<usize> {
-    let c = match design.chars().nth(pos) {
-        Some(c) => c,
-        None => return None,
-    };
-    let next_node = match node.children.get(&c) {
-        Some(n) => n,
-        None => return None,
-    };
-    if next_node.is_word {
-        return Some(pos);
+fn validate_design2(design: &str, node: &TrieNode, pos: usize) -> Option<usize> {
+    let c = design.chars().nth(pos)?;
+    let next_node = node.children.get(&c)?;
+    let next_pos = pos + 1;
+    let result = validate_design2(design, next_node, next_pos);
+    if result.is_none() && next_node.is_word {
+        return Some(next_pos);
     }
-    validate_design(design, next_node, pos + 1)
+    result
 }
 
 fn validate_design1(design: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool {
