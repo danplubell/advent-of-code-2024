@@ -3,6 +3,25 @@ advent_of_code::solution!(19);
 pub fn part_one(input: &str) -> Option<u32> {
     let words = input.lines().next().unwrap();
     let word_list = words.split(", ").collect::<Vec<_>>();
+    // Build the trie from word_list
+    let mut root = TrieNode::new();
+    let mut total: u32 = 0;
+    for word in word_list {
+        root.insert(word.as_bytes());
+    }
+
+    input.lines().skip(2).for_each(|w| {
+        let r = can_construct(w, &root);
+        if r {
+            total += 1;
+        }
+    });
+
+    Some(total)
+}
+pub fn part_one_hash(input: &str) -> Option<u32> {
+    let words = input.lines().next().unwrap();
+    let word_list = words.split(", ").collect::<Vec<_>>();
     let mut total = 0;
     let mut dictionary: HashMap<char, Vec<&str>> = HashMap::new();
     println!("dictionary {:?}", dictionary);
@@ -53,6 +72,7 @@ fn validate_design(w: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool {
     }
     design_valid
 }
+/*
 pub fn part_one1(input: &str) -> Option<u32> {
     let words = input.lines().next().unwrap();
     let dictionary = words.split(", ").collect::<Vec<_>>();
@@ -96,6 +116,9 @@ pub fn part_one1(input: &str) -> Option<u32> {
     Some(total)
 }
 
+
+ */
+/*
 fn validate_design2(design: &str, node: &TrieNode, pos: usize) -> Option<usize> {
     let c = design.chars().nth(pos)?;
     let next_node = node.children.get(&c)?;
@@ -106,6 +129,8 @@ fn validate_design2(design: &str, node: &TrieNode, pos: usize) -> Option<usize> 
     }
     result
 }
+
+ 
 
 fn validate_design1(design: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool {
     let mut idx = 0;
@@ -140,6 +165,8 @@ fn validate_design1(design: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool
     true
 }
 
+
+ */
 pub fn part_two(input: &str) -> Option<u32> {
     None
 }
@@ -159,7 +186,7 @@ mod tests {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
     }
-    #[test]
+/*    #[test]
     fn test_part_one_2() {
         //        let dictionary = vec!["ice", "cream", "icecream", "man", "go", "mango"];
         let dictionary = vec!["r", "wr", "b", "g", "bwu", "rb", "gb", "br"];
@@ -172,15 +199,84 @@ mod tests {
             println!("{}: {}", i + 1, tokenization);
         }
     }
+    
+ */
 }
 
 use std::collections::HashMap;
 
+// Trie node structure
+struct TrieNode {
+    is_end_of_word: bool,
+    children: HashMap<u8, TrieNode>,
+}
+
+impl TrieNode {
+    fn new() -> Self {
+        TrieNode {
+            is_end_of_word: false,
+            children: HashMap::new(),
+        }
+    }
+
+    // Insert a word into the trie
+    fn insert(&mut self, word: &[u8]) {
+        let mut current = self;
+
+        for &byte in word {
+            current = current.children.entry(byte).or_insert_with(TrieNode::new);
+        }
+
+        current.is_end_of_word = true;
+    }
+}
+
+fn can_construct(target: &str, root: &TrieNode) -> bool {
+    let target_bytes = target.as_bytes();
+    let n = target_bytes.len();
+
+
+    // Dynamic programming array
+    let mut dp = vec![false; n + 1];
+    dp[0] = true; // Empty string can always be constructed
+
+    for i in 0..n {
+        // Skip if we can't reach this position
+        if !dp[i] {
+            continue;
+        }
+
+        // Try to find words starting at position i
+        let mut current = root;
+        for j in i..n {
+            let byte = target_bytes[j];
+
+            // If there's no path in the trie for this character, break
+            if !current.children.contains_key(&byte) {
+                break;
+            }
+
+            // Move to the next node in the trie
+            current = &current.children[&byte];
+
+            // If we've found a complete word, mark the position after it as reachable
+            if current.is_end_of_word {
+                dp[j + 1] = true;
+            }
+        }
+    }
+
+    dp[n] // Final answer
+}
+
+
+/*
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct TrieNode {
     children: HashMap<char, TrieNode>,
     is_word: bool,
 }
+
 
 impl TrieNode {
     fn new() -> Self {
@@ -254,3 +350,6 @@ fn tokenize_with_trie(s: &str, dictionary: &[&str]) -> Vec<String> {
     find_words(s, 0, &mut path, &mut result, &trie.root);
     result
 }
+
+
+ */
