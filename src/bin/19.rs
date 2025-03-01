@@ -203,33 +203,6 @@ mod tests {
  */
 }
 
-use std::collections::HashMap;
-
-// Trie node structure
-struct TrieNode {
-    is_end_of_word: bool,
-    children: HashMap<u8, TrieNode>,
-}
-
-impl TrieNode {
-    fn new() -> Self {
-        TrieNode {
-            is_end_of_word: false,
-            children: HashMap::new(),
-        }
-    }
-
-    // Insert a word into the trie
-    fn insert(&mut self, word: &[u8]) {
-        let mut current = self;
-
-        for &byte in word {
-            current = current.children.entry(byte).or_insert_with(TrieNode::new);
-        }
-
-        current.is_end_of_word = true;
-    }
-}
 
 fn can_construct(target: &str, root: &TrieNode) -> bool {
     let target_bytes = target.as_bytes();
@@ -269,6 +242,96 @@ fn can_construct(target: &str, root: &TrieNode) -> bool {
     dp[n] // Final answer
 }
 
+use std::collections::HashMap;
+
+// Trie node structure
+struct TrieNode {
+    is_end_of_word: bool,
+    word: Option<String>,
+    children: HashMap<u8, TrieNode>,
+}
+
+impl TrieNode {
+    fn new() -> Self {
+        TrieNode {
+            is_end_of_word: false,
+            word: None,
+            children: HashMap::new(),
+        }
+    }
+
+    // Insert a word into the trie
+    fn insert(&mut self, word: &str) {
+        let mut current = self;
+
+        for &byte in word.as_bytes() {
+            current = current.children.entry(byte).or_insert_with(TrieNode::new);
+        }
+
+        current.is_end_of_word = true;
+        current.word = Some(word.to_string());
+    }
+}
+
+fn find_all_constructions(target: &str, word_list: &[&str]) -> Vec<Vec<String>> {
+    let target_bytes = target.as_bytes();
+    let n = target_bytes.len();
+
+    // Build the trie from word_list
+    let mut root = TrieNode::new();
+    for &word in word_list {
+        root.insert(word);
+    }
+
+    // For each position, store all valid words that end at that position
+    let mut dp: Vec<Vec<String>> = vec![vec![]; n + 1];
+    dp[0] = vec![String::new()]; // Empty string as the base case
+
+    for i in 0..n {
+        // Skip positions that can't be reached
+        if dp[i].is_empty() {
+            continue;
+        }
+
+        let prev_words = dp[i].clone(); // Clone to avoid borrowing conflicts
+
+        // Try to find words starting at position i
+        let mut current = &root;
+        let mut j = i;
+
+        while j < n {
+            let byte = target_bytes[j];
+
+            // If there's no path in the trie for this character, break
+            if !current.children.contains_key(&byte) {
+                break;
+            }
+
+            // Move to the next node in the trie
+            current = &current.children[&byte];
+            j += 1;
+
+            // If we've found a complete word, update dp[j]
+            if current.is_end_of_word {
+                if let Some(ref word) = current.word {
+                    for prev_construction in &prev_words {
+                        let new_construction = if prev_construction.is_empty() {
+                            word.clone()
+                        } else {
+                            format!("{} {}", prev_construction, word)
+                        };
+                        dp[j].push(new_construction);
+                    }
+                }
+            }
+        }
+    }
+
+    // Convert space-separated strings to vectors of words
+    dp[n].iter()
+        .map(|s| s.split_whitespace().map(String::from).collect())
+        .collect()
+}
 
 /*
 #[derive(Clone, PartialEq, Eq, Debug)]
