@@ -3,6 +3,53 @@ advent_of_code::solution!(19);
 pub fn part_one(input: &str) -> Option<u32> {
     let words = input.lines().next().unwrap();
     let word_list = words.split(", ").collect::<Vec<_>>();
+    let mut total = 0;
+    // Build the trie from word_list
+    let patterns: HashSet<_> = word_list.into_iter().collect();
+    let max_len = patterns.iter().map(|w| w.len()).max().unwrap();
+
+    let mut cache: HashMap<String, bool> = HashMap::new();
+    input.lines().skip(2).for_each(|design| {
+        if can_obtain(design, &patterns, max_len, &mut cache) {
+            println!("{}", design);
+            total += 1;
+        };
+    });
+
+    Some(total)
+}
+fn can_obtain(
+    design: &str,
+    patterns: &HashSet<&str>,
+    max_len: usize,
+    cache: &mut HashMap<String, bool>,
+) -> bool {
+    if design.is_empty() {
+        return true;
+    }
+    if let Some(design) = cache.get(design) {
+        return *design;
+    }
+    let range_len = min(design.len(), max_len) + 1;
+    for i in 0..range_len {
+        if let Some(slice) = design.get(..i) {
+            if patterns.contains(&slice) {
+                if let Some(slice) = design.get(i..) {
+                    if can_obtain(slice, patterns, max_len, cache) {
+                        let d = design.to_string();
+                        cache.insert(design.to_string(), true);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    cache.insert(design.to_string(), false);
+    false
+}
+pub fn part_one_trie(input: &str) -> Option<u32> {
+    let words = input.lines().next().unwrap();
+    let word_list = words.split(", ").collect::<Vec<_>>();
     // Build the trie from word_list
     let mut root = TrieNode::new();
     let mut total: u32 = 0;
@@ -31,7 +78,7 @@ pub fn part_one_hash(input: &str) -> Option<u32> {
         let list = dictionary.entry(c).or_default();
         list.push(word);
     }
-    
+
     input.lines().skip(2).for_each(|w| {
         if validate_design(w, &dictionary) {
             println!("{}", w);
@@ -60,14 +107,14 @@ fn validate_design(w: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool {
             let slice_opt = &w.get(range);
             let slice = match slice_opt {
                 Some(slice) => slice,
-                None=> return design_valid
+                None => return design_valid,
             };
             if *slice == *towel {
-                pos += towel.len() -1;
+                pos += towel.len() - 1;
                 design_valid = true;
                 break;
             }
-        };
+        }
         pos += 1;
     }
     design_valid
@@ -130,7 +177,7 @@ fn validate_design2(design: &str, node: &TrieNode, pos: usize) -> Option<usize> 
     result
 }
 
- 
+
 
 fn validate_design1(design: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool {
     let mut idx = 0;
@@ -167,7 +214,49 @@ fn validate_design1(design: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool
 
 
  */
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<usize> {
+    let words = input.lines().next().unwrap();
+    let word_list = words.split(", ").collect::<Vec<_>>();
+    let mut total = 0;
+    // Build the trie from word_list
+    let patterns: HashSet<_> = word_list.into_iter().collect();
+    let max_len: usize = patterns.iter().map(|w| w.len()).max().unwrap();
+
+    let mut cache: HashMap<String, usize> = HashMap::new();
+    input.lines().skip(2).for_each(|design| {
+        let n = num_possibilities(design, &patterns, max_len, &mut cache);
+        println!("{} {}", design, n);
+        total += n;
+    });
+
+    Some(total)
+}
+
+fn num_possibilities(design: &str, patterns: &HashSet<&str>, max_len: usize, cache: &mut HashMap<String, usize>) -> usize {
+    if design.is_empty() {
+        return 1;
+    }
+    let mut count: usize = 0;
+    if let Some(design) = cache.get(design) {
+        return *design;
+    }
+    let range_len = min(design.len(), max_len) + 1;
+    for i in 0..range_len {
+        if let Some(slice) = design.get(..i) {
+            if patterns.contains(&slice) {
+                if let Some(slice) = design.get(i..) {
+                    let n = num_possibilities(slice, patterns, max_len, cache);
+                    count += n;
+                }
+            }
+        }
+    }
+    cache.insert(design.to_string(), count);
+    count
+
+}
+
+pub fn part_two_trie(input: &str) -> Option<u32> {
     let words = input.lines().next().unwrap();
     let word_list = words.split(", ").collect::<Vec<_>>();
     // Build the trie from word_list
@@ -179,7 +268,6 @@ pub fn part_two(input: &str) -> Option<u32> {
     });
 
     Some(total)
-
 }
 
 #[cfg(test)]
@@ -197,28 +285,26 @@ mod tests {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(16));
     }
-/*    #[test]
-    fn test_part_one_2() {
-        //        let dictionary = vec!["ice", "cream", "icecream", "man", "go", "mango"];
-        let dictionary = vec!["r", "wr", "b", "g", "bwu", "rb", "gb", "br"];
-        // let s = "icecreamman";
-        let s = "brwrr";
-        let result = tokenize_with_trie(s, &dictionary);
+    /*    #[test]
+       fn test_part_one_2() {
+           //        let dictionary = vec!["ice", "cream", "icecream", "man", "go", "mango"];
+           let dictionary = vec!["r", "wr", "b", "g", "bwu", "rb", "gb", "br"];
+           // let s = "icecreamman";
+           let s = "brwrr";
+           let result = tokenize_with_trie(s, &dictionary);
 
-        println!("All possible tokenizations:");
-        for (i, tokenization) in result.iter().enumerate() {
-            println!("{}: {}", i + 1, tokenization);
-        }
-    }
-    
- */
+           println!("All possible tokenizations:");
+           for (i, tokenization) in result.iter().enumerate() {
+               println!("{}: {}", i + 1, tokenization);
+           }
+       }
+
+    */
 }
-
 
 fn can_construct(target: &str, root: &TrieNode) -> bool {
     let target_bytes = target.as_bytes();
     let n = target_bytes.len();
-
 
     // Dynamic programming array
     let mut dp = vec![false; n + 1];
@@ -254,7 +340,8 @@ fn can_construct(target: &str, root: &TrieNode) -> bool {
     dp[n] // Final answer
 }
 
-use std::collections::HashMap;
+use std::cmp::min;
+use std::collections::{HashMap, HashSet};
 
 // Trie node structure
 struct TrieNode {
@@ -285,7 +372,7 @@ impl TrieNode {
     }
 }
 
-fn find_all_constructions(target: &str,  word_list: &[&str]) -> Vec<Vec<String>> {
+fn find_all_constructions(target: &str, word_list: &[&str]) -> Vec<Vec<String>> {
     let target_bytes = target.as_bytes();
     let n = target_bytes.len();
 
@@ -294,7 +381,6 @@ fn find_all_constructions(target: &str,  word_list: &[&str]) -> Vec<Vec<String>>
     for word in word_list {
         root.insert(word);
     }
-
 
     // For each position, store all valid words that end at that position
     let mut dp: Vec<Vec<String>> = vec![vec![]; n + 1];
@@ -342,7 +428,8 @@ fn find_all_constructions(target: &str,  word_list: &[&str]) -> Vec<Vec<String>>
     }
 
     // Convert space-separated strings to vectors of words
-    dp[n].iter()
+    dp[n]
+        .iter()
         .map(|s| s.split_whitespace().map(String::from).collect())
         .collect()
 }
