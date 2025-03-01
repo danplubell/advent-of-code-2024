@@ -7,7 +7,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     let mut root = TrieNode::new();
     let mut total: u32 = 0;
     for word in word_list {
-        root.insert(word.as_bytes());
+        root.insert(word);
     }
 
     input.lines().skip(2).for_each(|w| {
@@ -168,7 +168,18 @@ fn validate_design1(design: &str, dictionary: &HashMap<char, Vec<&str>>) -> bool
 
  */
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let words = input.lines().next().unwrap();
+    let word_list = words.split(", ").collect::<Vec<_>>();
+    // Build the trie from word_list
+    let mut total = 0;
+    input.lines().skip(2).for_each(|w| {
+        let r = find_all_constructions(w, &word_list);
+        println!("{:?} {:?}", w, r.len());
+        total += r.len() as u32;
+    });
+
+    Some(total)
+
 }
 
 #[cfg(test)]
@@ -184,7 +195,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(16));
     }
 /*    #[test]
     fn test_part_one_2() {
@@ -234,6 +245,7 @@ fn can_construct(target: &str, root: &TrieNode) -> bool {
 
             // If we've found a complete word, mark the position after it as reachable
             if current.is_end_of_word {
+                println!("word: {:?}", current.word);
                 dp[j + 1] = true;
             }
         }
@@ -273,21 +285,23 @@ impl TrieNode {
     }
 }
 
-fn find_all_constructions(target: &str, word_list: &[&str]) -> Vec<Vec<String>> {
+fn find_all_constructions(target: &str,  word_list: &[&str]) -> Vec<Vec<String>> {
     let target_bytes = target.as_bytes();
     let n = target_bytes.len();
 
     // Build the trie from word_list
     let mut root = TrieNode::new();
-    for &word in word_list {
+    for word in word_list {
         root.insert(word);
     }
+
 
     // For each position, store all valid words that end at that position
     let mut dp: Vec<Vec<String>> = vec![vec![]; n + 1];
     dp[0] = vec![String::new()]; // Empty string as the base case
 
     for i in 0..n {
+        println!("{} {}", i, n);
         // Skip positions that can't be reached
         if dp[i].is_empty() {
             continue;
