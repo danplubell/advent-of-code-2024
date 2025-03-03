@@ -64,11 +64,11 @@ pub fn part_one(input: &str) -> Option<u32> {
         path.push(current);
         current = parent[&current];
     }
-    path.push((start_loc.0, start_loc.1));
+    //path.push((start_loc.0, start_loc.1));
     path.reverse();
     
      
-    println!("path {} {:?}",path.len(), path);
+    println!("path {}",path.len());
     
     None
 }
