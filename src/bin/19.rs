@@ -270,37 +270,6 @@ pub fn part_two_trie(input: &str) -> Option<u32> {
     Some(total)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_part_one() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(6));
-    }
-
-    #[test]
-    fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(16));
-    }
-    /*    #[test]
-       fn test_part_one_2() {
-           //        let dictionary = vec!["ice", "cream", "icecream", "man", "go", "mango"];
-           let dictionary = vec!["r", "wr", "b", "g", "bwu", "rb", "gb", "br"];
-           // let s = "icecreamman";
-           let s = "brwrr";
-           let result = tokenize_with_trie(s, &dictionary);
-
-           println!("All possible tokenizations:");
-           for (i, tokenization) in result.iter().enumerate() {
-               println!("{}: {}", i + 1, tokenization);
-           }
-       }
-
-    */
-}
 
 fn can_construct(target: &str, root: &TrieNode) -> bool {
     let target_bytes = target.as_bytes();
@@ -517,3 +486,35 @@ fn tokenize_with_trie(s: &str, dictionary: &[&str]) -> Vec<String> {
 
 
  */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part_one() {
+        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        assert_eq!(result, Some(6));
+    }
+
+    #[test]
+    fn test_part_two() {
+        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
+        assert_eq!(result, Some(16));
+    }
+    /*    #[test]
+       fn test_part_one_2() {
+           //        let dictionary = vec!["ice", "cream", "icecream", "man", "go", "mango"];
+           let dictionary = vec!["r", "wr", "b", "g", "bwu", "rb", "gb", "br"];
+           // let s = "icecreamman";
+           let s = "brwrr";
+           let result = tokenize_with_trie(s, &dictionary);
+
+           println!("All possible tokenizations:");
+           for (i, tokenization) in result.iter().enumerate() {
+               println!("{}: {}", i + 1, tokenization);
+           }
+       }
+
+    */
+}

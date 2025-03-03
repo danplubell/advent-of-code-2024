@@ -1,5 +1,6 @@
 use grid::Grid;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::path::absolute;
 
 advent_of_code::solution!(20);
 
@@ -9,7 +10,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     let max_rows: usize = input.lines().count();
     let max_cols: usize = input.lines().next().unwrap().len();
     let mut grid: Grid<char> = Grid::new(max_rows, max_cols);
-
+    let mut total =0;
     // find the start and end
     input.lines().enumerate().for_each(|(row, line)| {
         line.chars().enumerate().for_each(|(col, ch)| {
@@ -32,7 +33,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         for (dr, dc) in [(1, 0), (0, 1), (-1, 0), (0, -1)] {
             let (nr, nc) = (r as isize + dr, c as isize + dc);
             // Found the target
-            if (r,c) == end_loc {
+            if (r, c) == end_loc {
                 break;
             }
             // Skip if out of bounds
@@ -49,7 +50,7 @@ pub fn part_one(input: &str) -> Option<u32> {
             if (nr, nc) == end_loc {
                 break;
             }
-            
+
              */
             // Add to queue
             queue.push_back((nr, nc));
@@ -57,20 +58,52 @@ pub fn part_one(input: &str) -> Option<u32> {
             parent.insert((nr, nc), (r, c));
         }
     }
-    
-    let mut path:Vec<(usize,usize)> = Vec::new();
+
+    let mut path: Vec<(usize, usize)> = Vec::new();
     let mut current = end_loc;
     while current != start_loc {
         path.push(current);
         current = parent[&current];
     }
-    //path.push((start_loc.0, start_loc.1));
+    path.push((start_loc.0, start_loc.1));
     path.reverse();
+    let max_distance = path.len();
+    let mut steps: HashMap<(usize, usize), usize> = HashMap::new();
+    // add to map for later lookup
+    path.iter().enumerate().for_each(|(idx, (nr, nc))| {
+        steps.insert((*nr, *nc), idx);
+    });
+    for (r, c) in path.iter() {
+        for (nr, nc) in [
+            (*r + 2, *c),
+            (*r + 1, *c + 1),
+            (*r, *c + 2),
+            (*r - 1, *c + 1),
+        ] {
+            
+            let ch = match grid.get(nr, nc){
+                Some(c) => *c,
+                None => continue,
+            };
+            if ch == '#' {
+                continue;
+            }
+            let dist_next = match steps.get(&(nr, nc)) {
+                Some(d) => d,
+                None => continue,
+            };
+            let dist_curr = match steps.get(&(*r, *c)) {
+                Some(d) => d,
+                None => continue,
+            };
+            if (*dist_curr as isize - *dist_next as isize).abs() >= 102 {
+                total += 1;
+            }
+            
+        }
+    }
     
-     
-    println!("path {}",path.len());
-    
-    None
+    Some(total)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
