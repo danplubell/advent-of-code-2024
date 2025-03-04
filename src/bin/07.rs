@@ -142,7 +142,7 @@ fn generate_patterns<'a>(len: usize) -> Vec<Vec<&'a str>> {
 
     for x in 0..len {
         for n in 0..list.len() {
-            let mut patterns = list.clone();
+            let patterns = list.clone();
             let l = patterns.get(n).unwrap();
 
             for i in 1..3 {
@@ -180,7 +180,7 @@ fn generate_permutations(n: usize) -> Vec<Vec<&'static str>> {
 }
 pub fn part_two(input: &str) -> Option<u64> {
     let mut total: u64 = 0;
-    let mut pattern_hash: HashMap<usize, Vec<Vec<&str>>> = HashMap::new();
+    let pattern_hash: HashMap<usize, Vec<Vec<&str>>> = HashMap::new();
     for l in input.lines() {
         println!("line: {:?}", l);
         //parse out the value from the list of value
@@ -222,7 +222,7 @@ pub fn part_two(input: &str) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Token::{Concatenate, Multiply, Plus};
+    
 
     #[test]
     fn test_part_one() {

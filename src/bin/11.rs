@@ -1,6 +1,4 @@
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::collections::HashMap;
 use rayon::prelude::*;
 advent_of_code::solution!(11);
 
@@ -51,7 +49,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 
 pub fn part_two(input: &str) -> Option<usize> {
     let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
-    let mut stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
+    let stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
     let mut cache:HashMap<(i64,i64), i64> = HashMap::new();
 
     let m:Vec<i64> = stones.iter().map(|s| blink(*s, 75, &mut cache)).collect();
@@ -61,7 +59,7 @@ pub fn part_two(input: &str) -> Option<usize> {
 
 pub fn part_two3(input: &str) -> Option<usize> {
     let list: Vec<_> = input.lines().nth(0)?.split(" ").collect();
-    let mut stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
+    let stones: Vec<i64> = list.iter().map(|s| s.parse::<i64>().unwrap()).collect();
     let mut work_list: &mut std::vec::Vec<i64> = &mut vec![];
     let mut ref_list: &mut Vec<i64>;
     let mut even_list: std::vec::Vec<i64> = vec![];

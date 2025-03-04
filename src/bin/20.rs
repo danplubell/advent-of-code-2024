@@ -1,6 +1,5 @@
 use grid::Grid;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::path::absolute;
 
 advent_of_code::solution!(20);
 
@@ -103,7 +102,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
     Some(total)
 }
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two2(input: &str) -> Option<u32> {
     let mut start_loc: (usize, usize) = (0, 0);
     let mut end_loc: (usize, usize) = (0, 0);
     let max_rows: usize = input.lines().count();
@@ -213,7 +212,7 @@ pub fn part_two(input: &str) -> Option<u32> {
 
     Some(total)
 }
-pub fn part_two2(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u32> {
     let mut start_loc: (usize, usize) = (0, 0);
     let mut end_loc: (usize, usize) = (0, 0);
     let max_rows: usize = input.lines().count();
@@ -267,7 +266,7 @@ pub fn part_two2(input: &str) -> Option<u32> {
             parent.insert((nr, nc), (r, c));
         }
     }
-
+    grid
     let mut path: Vec<(usize, usize)> = Vec::new();
     let mut current = end_loc;
     while current != start_loc {
@@ -282,12 +281,11 @@ pub fn part_two2(input: &str) -> Option<u32> {
     path.iter().enumerate().for_each(|(idx, (nr, nc))| {
         steps.insert((*nr, *nc), idx);
     });
-    for (ru, cu) in path.iter() {
-        let r = *ru as isize;
-        let c = *cu as isize;
+    let mut cheats = HashSet::new();
+    
+    for (r, c) in path.iter() {
         for radius in 2..21 {
-            let candidates =
-                points_at_manhattan_distance(max_rows, max_cols, r as usize, c as usize, radius);
+            let candidates = points_at_manhattan_distance(max_rows, max_cols, *r, *c, radius);
             for (nr, nc) in candidates {
                 let ch = match grid.get(nr, nc) {
                     Some(c) => *c,
@@ -300,18 +298,19 @@ pub fn part_two2(input: &str) -> Option<u32> {
                     Some(d) => d,
                     None => continue,
                 };
-                let dist_curr = match steps.get(&(r as usize, c as usize)) {
+                let dist_curr = match steps.get(&(*r, *c)) {
                     Some(d) => d,
                     None => continue,
                 };
-                if (*dist_curr as isize - *dist_next as isize) >= 102 {
-                    total += 1;
+                if (*dist_curr as isize - *dist_next as isize) == 78  {
+                    cheats.insert((nr, nc, r,c));
                 }
             }
         }
     }
+    println!("cheats: {:?}", cheats);
+    Some(cheats.len() as u32)
 
-    Some(total)
 }
 /// Finds all points in a grid that have a Manhattan distance of exactly `distance`
 /// from the given reference point (r, c).
@@ -373,7 +372,7 @@ pub fn part_two1(input: &str) -> Option<u32> {
     let rows: usize = input.lines().count();
     let cols: usize = input.lines().next().unwrap().len();
     let mut grid: Grid<char> = Grid::new(rows, cols);
-    let mut total = 0;
+    let total = 0;
     // find the start and end
     input.lines().enumerate().for_each(|(row, line)| {
         line.chars().enumerate().for_each(|(col, ch)| {

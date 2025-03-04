@@ -114,7 +114,7 @@ pub fn part_two(input: &str) -> Option<i64> {
     files.iter().for_each(|(i, f)| {
         // go through each file and try to move it
         let new_groups = group_identical_with_index(&buffer);
-        let mut gap_list: Vec<_> = new_groups.iter().filter(|(i, g)| g[0] == -1).collect();
+        let gap_list: Vec<_> = new_groups.iter().filter(|(i, g)| g[0] == -1).collect();
         let result = gap_list.iter().find(|(i, g)| g.len() >= f.len());
         if let Some((j, v)) = result {
             if i > j {

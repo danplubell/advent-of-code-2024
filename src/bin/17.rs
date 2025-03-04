@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 
 advent_of_code::solution!(17);
 
@@ -238,7 +237,7 @@ pub fn part_two(input: &str) -> Option<u64> {
     let mut register_b: Register = 0_u64;
     let mut register_c: Register = 0_u64;
     let mut program: Vec<Instruction> = Vec::new();
-    let mut out_buffer: Vec<OutValue> = Vec::new();
+    let out_buffer: Vec<OutValue> = Vec::new();
     input.lines().for_each(|l| {
         if l.contains("Register A:") {
             register_a = parse_register(l.trim());
