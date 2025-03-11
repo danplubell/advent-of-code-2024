@@ -3,27 +3,41 @@ use grid::Grid;
 
 advent_of_code::solution!(21);
 
+type NumberPad = [[Option<char>; 3];4];
 pub fn part_one(input: &str) -> Option<u32> {
-
-    for input_line in input.lines() {
-
-        let mut start_loc: (usize, usize) = (0, 0);
-        let mut end_loc: (usize, usize) = (0, 0);
-
-    }
-
-    let number_pad:[[Option<char>; 3];4] = [
+    let number_pad:NumberPad = [
         [Some('7'), Some('8'), Some('9')],
         [Some('4'), Some('5'), Some('6')],
         [Some('1'), Some('2'), Some('3')],
         [None, Some('0'), Some('A')],
     ];
+    let mut start_char = 'A';
+    for input_line in input.lines() {
+        println!("Part one: {:?}", input_line);
+        let mut start_loc: (usize, usize) = (0, 0);
+        let mut end_loc: (usize, usize) = (0, 0);
+        
+        input_line.chars().enumerate().for_each(|(i, c)| {
+            let start_pos = find_pos(start_char, &number_pad);
+            let end_pos = find_pos(c, &number_pad);
+            println!("{:?} {:?}", start_pos, end_pos);
+            
+            start_char = c;
+        })
+    }
+
     
     
 
     None
 }
-fn find_pos(value: char, number_pad:&[[Option<char>; 3];4])-> Option<(usize, usize)> {
+fn get_patterns(number_pad:&NumberPad, pattern: &str)  {
+    let previous: Option<char> = None;
+    pattern.chars().enumerate().for_each(|(idx,c)|{
+        todo!()
+    })
+}
+fn find_pos(value: char, number_pad:&NumberPad)-> Option<(usize, usize)> {
     for r in 0..number_pad.len() {
         for c in 0..number_pad[r].len() {
             if let Some(v) = number_pad[r][c] {
