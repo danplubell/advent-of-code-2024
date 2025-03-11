@@ -2,7 +2,7 @@ use grid::Grid;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 advent_of_code::solution!(20);
-https://gitlab.com/bricka/advent-of-code-2024-rust/-/blob/main/src/days/day20.rs?ref_type=heads
+//https://gitlab.com/bricka/advent-of-code-2024-rust/-/blob/main/src/days/day20.rs?ref_type=heads
 pub fn part_one(input: &str) -> Option<u32> {
     let mut start_loc: (usize, usize) = (0, 0);
     let mut end_loc: (usize, usize) = (0, 0);
@@ -266,7 +266,7 @@ pub fn part_two(input: &str) -> Option<u32> {
             parent.insert((nr, nc), (r, c));
         }
     }
-    grid
+    
     let mut path: Vec<(usize, usize)> = Vec::new();
     let mut current = end_loc;
     while current != start_loc {
