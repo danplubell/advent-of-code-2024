@@ -27,46 +27,54 @@ pub fn part_one(input: &str) -> Option<u32> {
             start_char = c;
         })
     }
-
+    
     None
 }
 fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(usize,usize),number_pad:&NumberPad)  {
-    let mut queue = VecDeque::from([start_pos]);
-    let mut visited = HashSet::from([start_pos]);
-
-    let mut parent: HashMap<(usize, usize), (usize, usize, char)> = HashMap::new();
-    while let Some((r, c)) = queue.pop_front() {
+    let max_col = number_pad[0].len();
+    let max_row = number_pad.len();
+    println!("{:?} {:?} ", max_col, max_row );
+    let mut queue:VecDeque<((usize,usize),&str)> = VecDeque::new();
+    queue.push_back((start_pos, ""));
+    let mut visited = HashSet::new();
+    visited.insert(start_pos);
+    let mut shortest_paths = Vec::new();
+    let mut shortest_length = usize::MAX;
+    
+    while let Some(((r, c), path)) = queue.pop_front() {
         // Check all four directions
-        for (idx, (dr, dc, dir)) in [(1, 0, 'v'), (0, 1,'>' ), (-1, 0, '<'), (0, -1,'^' )].iter().enumerate() {
+        if (r, c) == end_pos {
+            if path.len()< shortest_length {
+                shortest_length = path.len();
+                shortest_paths = Vec::new();
+            } else if path.len() == shortest_length {
+                shortest_paths.push(path);
+            }
+            continue;
+        }
+        if !shortest_paths.is_empty() && path.len() >= shortest_length {
+            continue;
+        }
+        for (idx, ((dr, dc), dir)) in [((1, 0), 'v'), ((0, 1),'>' ), ((-1, 0), '<'), ((0, -1),'^' )].iter().enumerate() {
             let (nr, nc) = (r as isize + dr, c as isize + dc);
             if (r,c) == avoid_pos {
                 continue;
             }
             // Found the target
-            if (r, c) == end_pos {
-                break;
-            }
             // Skip if out of bounds
-            if nr < 0 || nc < 0 || nr >= 4 as isize || nc >= 3 as isize {
+            if nr < 0 || nc < 0 || nr >= 4isize || nc >= 3isize {
                 continue;
             }
 
             let (nr, nc) = (nr as usize, nc as usize);
-            // Add to queue
-            queue.push_back((nr, nc));
-            visited.insert((nr, nc));
-            parent.insert((nr, nc), (r, c, *dir));
+            if !visited.contains(&(nr, nc)) {
+                visited.insert((nr, nc));
+                let new_path = path.clone();
+                queue.push_back(((nr,nc), new_path));
+            }
         }
     }
-    let mut path: Vec<(usize, usize)> = Vec::new();
-    let mut current = end_pos;
-    while current != start_pos {
-        path.push(current);
-        current = parent[&current];
-    }
-
-    path.reverse();
-
+    shortest_paths
 }
 fn find_pos(value: char, number_pad:&NumberPad)-> Option<(usize, usize)> {
     for r in 0..number_pad.len() {
@@ -86,13 +94,7 @@ fn solve_number_pad(number_pad: &[[Option<&str>; 3];4]) {
 pub fn part_two(input: &str) -> Option<u32> {
     None
 }
-struct Step {
-    pos: (usize, usize),
-    direction: ,
-}
-fn shortest_routes(start_pos: usize, end_pos: usize, grid: Vec<Vec<Step>>) {
 
-}
 
 #[cfg(test)]
 mod tests {
