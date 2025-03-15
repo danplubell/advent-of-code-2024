@@ -57,35 +57,36 @@ fn bfs_shortest_paths(
     let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
     let direction_chars = ['>', 'v', '<', '^'];
 
-    // Queue for BFS - stores (position, path_string)
+    // Queue for BFS - stores (position, path_string, level)
+    // We add level to track distance from start
     let mut queue = VecDeque::new();
-    queue.push_back((start, String::new()));
+    queue.push_back((start, String::new(), 0));
 
-    // Track visited cells to avoid loops
-    let mut visited = HashSet::new();
-    visited.insert(start);
+    // Track distance to each cell (used instead of a simple visited set)
+    let mut distance = std::collections::HashMap::new();
+    distance.insert(start, 0);
 
     // Store all shortest paths
     let mut shortest_paths = vec![];
-    let mut shortest_length = usize::MAX;
+    let mut shortest_distance = usize::MAX;
 
-    while let Some((current, path)) = queue.pop_front() {
-        // If we found a path to the end
-        if current == end {
-            // If this is shorter than our current shortest, reset the list
-            if path.len() < shortest_length {
-                shortest_paths = vec![path];
-                shortest_length = path.len();
-            }
-            // If it's the same length as our shortest, add it to the list
-            else if path.len() == shortest_length {
-                shortest_paths.push(path);
-            }
+    while let Some((current, path, level)) = queue.pop_front() {
+        // If we've already found shorter paths, and this path is longer, skip it
+        if !shortest_paths.is_empty() && level > shortest_distance {
             continue;
         }
 
-        // If this path is already longer than our shortest path, skip it
-        if !shortest_paths.is_empty() && path.len() >= shortest_length {
+        // If we found a path to the end
+        if current == end {
+            // If this is shorter than our current shortest, reset the list
+            if level < shortest_distance {
+                shortest_paths = vec![path];
+                shortest_distance = level;
+            }
+            // If it's the same length as our shortest, add it to the list
+            else if level == shortest_distance {
+                shortest_paths.push(path);
+            }
             continue;
         }
 
@@ -98,16 +99,19 @@ fn bfs_shortest_paths(
             if new_row >= 0 && new_row < rows as isize &&
                 new_col >= 0 && new_col < cols as isize {
                 let new_pos = (new_row as usize, new_col as usize);
+                let new_level = level + 1;
 
-                // If we haven't visited this cell yet in the BFS
-                if !visited.contains(&new_pos) {
-                    // Mark as visited
-                    visited.insert(new_pos);
+                // Visit this cell if:
+                // 1. We haven't seen it before, OR
+                // 2. We've found an equally short path to it
+                if !distance.contains_key(&new_pos) || distance[&new_pos] == new_level {
+                    // Update distance
+                    distance.insert(new_pos, new_level);
 
                     // Create new path by extending the current path with the direction character
                     let mut new_path = path.clone();
                     new_path.push(direction_chars[dir_idx]);
-                    queue.push_back((new_pos, new_path));
+                    queue.push_back((new_pos, new_path, new_level));
                 }
             }
         }
@@ -147,7 +151,7 @@ mod tests {
 
         // Test path from 1 to 9
         let paths = find_all_shortest_paths(&grid, 1, 9);
-        assert_eq!(paths.len(), 2); // There should be 2 paths of equal length
+        assert_eq!(paths.len(), 6); // There should be 2 paths of equal length
 
         // Both paths should have length 4 (4 movement directions)
         assert_eq!(paths[0].len(), 4);
