@@ -1,29 +1,43 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
-use grid::Grid;
 use itertools::Itertools;
 
 advent_of_code::solution!(21);
 
 type NumberPad = [[Option<char>; 3];4];
 type DirectionPad = [[Option<char>; 3]; 2];
+type Grid = Vec<Vec<Option<char>>>;
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let number_pad:NumberPad = [
-        [Some('7'), Some('8'), Some('9')],
-        [Some('4'), Some('5'), Some('6')],
-        [Some('1'), Some('2'), Some('3')],
-        [None, Some('0'), Some('A')],
+    let number_pad:Grid = vec![
+        vec![Some('7'), Some('8'), Some('9')],
+        vec![Some('4'), Some('5'), Some('6')],
+        vec![Some('1'), Some('2'), Some('3')],
+        vec![None, Some('0'), Some('A')],
     ];
-    let direction_pad:DirectionPad = [
-        [None, Some('^'), Some('A')],
-        [Some('<'), Some('v'), Some('>')],
+    let direction_pad:Grid = vec![
+        vec![None, Some('^'), Some('A')],
+        vec![Some('<'), Some('v'), Some('>')],
         
-    ],
-    let mut start_char = 'A';
+    ];
+    let mut total:u32 = 0;
     for input_line in input.lines() {
-        println!("Part one: {:?}", input_line);
-        let avoid_number_pos = (0,3);
+        let pn = gen_path(&number_pad,input_line,(0,3));
+//        println!("Numeric: {:?}",pn);
+        let pd1 = gen_path(&direction_pad, &pn, (0, 0));
+//        println!("First: {:?}",pd1);
+        let pd2 = gen_path(&direction_pad, &pd1, (0, 0));
+    //    println!("Second: {} {:?}",pd2.len(), pd2 );
+        let split = input_line.chars().take(3).collect::<String>();
+        let n:u32 = split.parse().unwrap();
+        let complexity = n * pd2.len() as u32;
+        println!("{:?} {} {} {:?}",input_line, pd2.len(), n, pd2);
+        total += complexity;
+//        let pd3 = gen_path(&direction_pad, &pd2, (0, 0));
+//        println!("Third: {:?} {}",pd3,pd3.len());
+                
+        /*
+        let mut avoid_number_pos = (0,3);
         let mut patterns = Vec::new();
         let mut pattern = Vec::new();
         input_line.chars().for_each(|c| {
@@ -31,21 +45,51 @@ pub fn part_one(input: &str) -> Option<u32> {
             let end_pos = find_pos(c, &number_pad);
             if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
                 patterns = get_path_patterns(start_pos, end_pos, avoid_number_pos, &number_pad);
-                println!("patterns: {:?}", patterns);
                 pattern.push(patterns[0].clone())
             }
             start_char = c;
         });
         // have number pad patterns in patterns
-       let pattern =  pattern.iter().join("");
+       let curr_pattern =  pattern.iter().join("");
+//        println!("pattern: {:?}", pattern);
+        avoid_number_pos = (0,0);
+        pattern = Vec::new();
+        curr_pattern.chars().for_each(|c| {
+            let start_pos = find_pos(start_char, &direction_pad);
+            let end_pos = find_pos(c, &direction_pad);
+            if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
+                patterns = get_path_patterns(start_pos, end_pos, avoid_number_pos, &direction_pad);
+                pattern.push(patterns[0].clone());
+                println!("patterns1: {:?}", patterns);
+            }
+            start_char = c;
+        });
+        println!("second: {:?}", pattern.iter().join(""));
         
+         */
     }
-    None
+    Some(total)
 }
-fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(usize,usize),number_pad:&NumberPad)-> Vec<String>  {
+fn gen_path(grid:&Grid,input_line: &str,avoid_pos: (usize,usize)) -> String {
+    let mut start_char = 'A';
+    let mut patterns = Vec::new();
+    let mut pattern = Vec::new();
+    input_line.chars().for_each(|c| {
+        let start_pos = find_pos(start_char, grid);
+        let end_pos = find_pos(c, grid);
+        if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
+            patterns = get_path_patterns(start_pos, end_pos, avoid_pos, grid);
+            pattern.push(patterns[0].clone())
+        }
+        start_char = c;
+    });
+    // have number pad patterns in patterns
+    pattern.iter().join("")
+
+}
+fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(usize,usize),number_pad:&Grid)-> Vec<String>  {
     let max_col = number_pad[0].len();
     let max_row = number_pad.len();
-    println!("{:?} {:?} ", max_col, max_row );
     let mut queue = VecDeque::new();
     queue.push_back((start_pos, String::new(), 0));
     // Track distance to each cell (used instead of a simple visited set)
@@ -103,7 +147,7 @@ fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(us
     }
     shortest_paths
 }
-fn find_pos(value: char, number_pad:&NumberPad)-> Option<(usize, usize)> {
+fn find_pos(value: char, number_pad:&Grid)-> Option<(usize, usize)> {
     for r in 0..number_pad.len() {
         for c in 0..number_pad[r].len() {
             if let Some(v) = number_pad[r][c] {
@@ -114,9 +158,6 @@ fn find_pos(value: char, number_pad:&NumberPad)-> Option<(usize, usize)> {
         }
     }
     None
-}
-fn solve_number_pad(number_pad: &[[Option<&str>; 3];4]) {
-
 }
 pub fn part_two(input: &str) -> Option<u32> {
     None
@@ -130,7 +171,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(126384));
     }
 
     #[test]
@@ -140,11 +181,11 @@ mod tests {
     }
     #[test]
     fn test_find_pos() {
-        let number_pad:[[Option<char>; 3];4] = [
-            [Some('7'), Some('8'), Some('9')],
-            [Some('4'), Some('5'), Some('6')],
-            [Some('1'), Some('2'), Some('3')],
-            [None, Some('0'), Some('A')],
+        let number_pad:Grid = vec![
+            vec![Some('7'), Some('8'), Some('9')],
+            vec![Some('4'), Some('5'), Some('6')],
+            vec![Some('1'), Some('2'), Some('3')],
+            vec![None, Some('0'), Some('A')],
         ];
         assert_eq!(find_pos('7', &number_pad), Some((0,0)));
     }
