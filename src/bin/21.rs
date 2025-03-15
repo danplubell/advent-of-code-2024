@@ -22,12 +22,12 @@ pub fn part_one(input: &str) -> Option<u32> {
     ];
     let mut total:u32 = 0;
     for input_line in input.lines() {
-        let pn = gen_path(&number_pad,input_line,(0,3));
-//        println!("Numeric: {:?}",pn);
+        let pn = gen_path(&number_pad,input_line,(3,0));
+        println!("Numeric: {:?}",pn);
         let pd1 = gen_path(&direction_pad, &pn, (0, 0));
-//        println!("First: {:?}",pd1);
+        println!("First: {:?}",pd1);
         let pd2 = gen_path(&direction_pad, &pd1, (0, 0));
-    //    println!("Second: {} {:?}",pd2.len(), pd2 );
+        println!("Second: {} {:?}",pd2.len(), pd2 );
         let split = input_line.chars().take(3).collect::<String>();
         let n:u32 = split.parse().unwrap();
         let complexity = n * pd2.len() as u32;
@@ -78,8 +78,16 @@ fn gen_path(grid:&Grid,input_line: &str,avoid_pos: (usize,usize)) -> String {
         let start_pos = find_pos(start_char, grid);
         let end_pos = find_pos(c, grid);
         if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
-            patterns = get_path_patterns(start_pos, end_pos, avoid_pos, grid);
-            pattern.push(patterns[0].clone())
+            
+            if start_pos == end_pos {
+                println!("{:?} {:?}", start_pos, end_pos);
+                let mut last: String = pattern.pop().unwrap();
+                println!("{:?}",pattern );
+                pattern.push(last);
+            } else {
+                patterns = get_path_patterns(start_pos, end_pos, avoid_pos, grid);
+                pattern.push(patterns[0].clone())
+            }
         }
         start_char = c;
     });
@@ -97,7 +105,6 @@ fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(us
     distance.insert(start_pos, 0);
     let mut shortest_paths = Vec::new();
     let mut shortest_distance = usize::MAX;
-
     // Define possible movements: right, down, left, up
     // The index corresponds to the direction: 0 = right (>), 1 = down (v), 2 = left (<), 3 = up (^)
     let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
@@ -126,7 +133,7 @@ fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(us
         }
         for (idx, ((dr, dc))) in directions.iter().enumerate() {
             let (nr, nc) = (r as isize + dr, c as isize + dc);
-            if (r,c) == avoid_pos {
+            if (nr as usize,nc as usize) == avoid_pos {
                 continue;
             }
             // Found the target
@@ -163,7 +170,17 @@ pub fn part_two(input: &str) -> Option<u32> {
     None
 }
 
+// "179A" 64 179 
+// "v<A<AA>>^AAvA<^A>AvA^Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
+// "<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
+/*
+            1               7   9   A
+Numeric: " <   ^   <   A    ^^A >>A vvvA"
+First: "  v<<A >^A v<A >>^A <AA>AvAA^Av<AAA>^A"
+Second: 76 "v<A<AA>>^AvA<^A>Av<A<A>>^AvAA<^A>Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
+"179A" 76 179 "v<A<AA>>^AvA<^A>Av<A<A>>^AvAA<^A>Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
 
+ */
 #[cfg(test)]
 mod tests {
     use super::*;
