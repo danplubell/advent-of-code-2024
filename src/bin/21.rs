@@ -1,101 +1,124 @@
+use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
-use itertools::Itertools;
 
 advent_of_code::solution!(21);
 
-type NumberPad = [[Option<char>; 3];4];
+type NumberPad = [[Option<char>; 3]; 4];
 type DirectionPad = [[Option<char>; 3]; 2];
 type Grid = Vec<Vec<Option<char>>>;
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let number_pad:Grid = vec![
+    let number_pad: Grid = vec![
         vec![Some('7'), Some('8'), Some('9')],
         vec![Some('4'), Some('5'), Some('6')],
         vec![Some('1'), Some('2'), Some('3')],
         vec![None, Some('0'), Some('A')],
     ];
-    let direction_pad:Grid = vec![
+    let direction_pad: Grid = vec![
         vec![None, Some('^'), Some('A')],
         vec![Some('<'), Some('v'), Some('>')],
-        
     ];
-    let mut total:u32 = 0;
+    let mut total: u32 = 0;
     for input_line in input.lines() {
-        let pn = gen_path(&number_pad,input_line,(3,0));
-        println!("Numeric: {:?}",pn);
-        let pd1 = gen_path(&direction_pad, &pn, (0, 0));
-        println!("First: {:?}",pd1);
-        let pd2 = gen_path(&direction_pad, &pd1, (0, 0));
-        println!("Second: {} {:?}",pd2.len(), pd2 );
+        let pn = gen_path(&number_pad, input_line, (3, 0));
+        println!("Numeric: {:?}", pn);
+        let pd1_vec = generate_combinations(pn);
+        let mut min_pattern:String = String::new(); 
+        let mut min_len = usize::MAX;
+        for s in pd1_vec {
+            let pd1 = gen_path(&direction_pad, &s, (0, 0));
+            let combo = generate_combinations(pd1);
+            for c in combo {
+                if c.len() < min_len {
+                    min_len = c.len();
+                    min_pattern = c;
+                }
+            }
+        }
+        println!("First: {:?}", min_pattern);
+        let pd2 = gen_path(&direction_pad, &min_pattern, (0, 0));
+        println!("vector: {:?}", pd2);
+        let pd2_vec = generate_combinations(pd2);
+        let mut min_pattern:String = String::new();
+        let mut min_len = usize::MAX;
+        for s in pd2_vec {
+            let pd1 = gen_path(&direction_pad, &s, (0, 0));
+            let combo = generate_combinations(pd1);
+            for c in combo {
+                if c.len() < min_len {
+                    min_len = c.len();
+                    min_pattern = c;
+                }
+            }
+        }
+
+        println!("Second: {} {:?}", min_pattern.len(), min_pattern);
         let split = input_line.chars().take(3).collect::<String>();
-        let n:u32 = split.parse().unwrap();
-        let complexity = n * pd2.len() as u32;
-        println!("{:?} {} {} {:?}",input_line, pd2.len(), n, pd2);
+        let n: u32 = split.parse().unwrap();
+        let complexity = n * min_pattern.len() as u32;
+        println!("{:?} {} {} {:?}", input_line, min_pattern.len(), n, min_pattern);
         total += complexity;
-//        let pd3 = gen_path(&direction_pad, &pd2, (0, 0));
-//        println!("Third: {:?} {}",pd3,pd3.len());
-                
+        //        let pd3 = gen_path(&direction_pad, &pd2, (0, 0));
+        //        println!("Third: {:?} {}",pd3,pd3.len());
+
         /*
-        let mut avoid_number_pos = (0,3);
-        let mut patterns = Vec::new();
-        let mut pattern = Vec::new();
-        input_line.chars().for_each(|c| {
-            let start_pos = find_pos(start_char, &number_pad);
-            let end_pos = find_pos(c, &number_pad);
-            if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
-                patterns = get_path_patterns(start_pos, end_pos, avoid_number_pos, &number_pad);
-                pattern.push(patterns[0].clone())
-            }
-            start_char = c;
-        });
-        // have number pad patterns in patterns
-       let curr_pattern =  pattern.iter().join("");
-//        println!("pattern: {:?}", pattern);
-        avoid_number_pos = (0,0);
-        pattern = Vec::new();
-        curr_pattern.chars().for_each(|c| {
-            let start_pos = find_pos(start_char, &direction_pad);
-            let end_pos = find_pos(c, &direction_pad);
-            if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
-                patterns = get_path_patterns(start_pos, end_pos, avoid_number_pos, &direction_pad);
-                pattern.push(patterns[0].clone());
-                println!("patterns1: {:?}", patterns);
-            }
-            start_char = c;
-        });
-        println!("second: {:?}", pattern.iter().join(""));
-        
-         */
+                let mut avoid_number_pos = (0,3);
+                let mut patterns = Vec::new();
+                let mut pattern = Vec::new();
+                input_line.chars().for_each(|c| {
+                    let start_pos = find_pos(start_char, &number_pad);
+                    let end_pos = find_pos(c, &number_pad);
+                    if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
+                        patterns = get_path_patterns(start_pos, end_pos, avoid_number_pos, &number_pad);
+                        pattern.push(patterns[0].clone())
+                    }
+                    start_char = c;
+                });
+                // have number pad patterns in patterns
+               let curr_pattern =  pattern.iter().join("");
+        //        println!("pattern: {:?}", pattern);
+                avoid_number_pos = (0,0);
+                pattern = Vec::new();
+                curr_pattern.chars().for_each(|c| {
+                    let start_pos = find_pos(start_char, &direction_pad);
+                    let end_pos = find_pos(c, &direction_pad);
+                    if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
+                        patterns = get_path_patterns(start_pos, end_pos, avoid_number_pos, &direction_pad);
+                        pattern.push(patterns[0].clone());
+                        println!("patterns1: {:?}", patterns);
+                    }
+                    start_char = c;
+                });
+                println!("second: {:?}", pattern.iter().join(""));
+
+                 */
     }
     Some(total)
 }
-fn gen_path(grid:&Grid,input_line: &str,avoid_pos: (usize,usize)) -> String {
+fn gen_path(grid: &Grid, input_line: &str, avoid_pos: (usize, usize)) -> Vec<Vec<String>> {
     let mut start_char = 'A';
-    let mut patterns = Vec::new();
-    let mut pattern = Vec::new();
+    let mut patterns = Vec::new(); // patterns from each position
+    let mut pattern = Vec::new(); // combinations of patterns
     input_line.chars().for_each(|c| {
         let start_pos = find_pos(start_char, grid);
         let end_pos = find_pos(c, grid);
-        if let (Some(start_pos), Some(end_pos))= (start_pos, end_pos) {
-            
-            if start_pos == end_pos {
-                println!("{:?} {:?}", start_pos, end_pos);
-                let mut last: String = pattern.pop().unwrap();
-                println!("{:?}",pattern );
-                pattern.push(last);
-            } else {
-                patterns = get_path_patterns(start_pos, end_pos, avoid_pos, grid);
-                pattern.push(patterns[0].clone())
-            }
+        if let (Some(start_pos), Some(end_pos)) = (start_pos, end_pos) {
+            patterns = get_path_patterns(start_pos, end_pos, avoid_pos, grid);
+            pattern.push(patterns.clone());
         }
         start_char = c;
     });
     // have number pad patterns in patterns
-    pattern.iter().join("")
-
+    println!("patterns: {:?}", pattern);
+   pattern
 }
-fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(usize,usize),number_pad:&Grid)-> Vec<String>  {
+fn get_path_patterns(
+    start_pos: (usize, usize),
+    end_pos: (usize, usize),
+    avoid_pos: (usize, usize),
+    number_pad: &Grid,
+) -> Vec<String> {
     let max_col = number_pad[0].len();
     let max_row = number_pad.len();
     let mut queue = VecDeque::new();
@@ -121,19 +144,18 @@ fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(us
                     shortest_paths = Vec::new();
                     path.push('A');
                     shortest_paths.push(path);
-                    
                 }
                 Ordering::Equal => {
                     path.push('A');
                     shortest_paths.push(path);
                 }
-                _=>()
+                _ => (),
             }
             continue;
         }
         for (idx, ((dr, dc))) in directions.iter().enumerate() {
             let (nr, nc) = (r as isize + dr, c as isize + dc);
-            if (nr as usize,nc as usize) == avoid_pos {
+            if (nr as usize, nc as usize) == avoid_pos {
                 continue;
             }
             // Found the target
@@ -144,17 +166,17 @@ fn get_path_patterns(start_pos:(usize,usize),end_pos:(usize,usize),avoid_pos:(us
 
             let (nr, nc) = (nr as usize, nc as usize);
             let new_level = level + 1;
-            if !distance.contains_key(&(nr, nc)) || distance[&(nr, nc)]  == new_level {
+            if !distance.contains_key(&(nr, nc)) || distance[&(nr, nc)] == new_level {
                 distance.insert((nr, nc), new_level);
                 let mut new_path = path.clone();
                 new_path.push(direction_chars[idx]);
-                queue.push_back(((nr,nc), new_path, new_level));
+                queue.push_back(((nr, nc), new_path, new_level));
             }
         }
     }
     shortest_paths
 }
-fn find_pos(value: char, number_pad:&Grid)-> Option<(usize, usize)> {
+fn find_pos(value: char, number_pad: &Grid) -> Option<(usize, usize)> {
     for r in 0..number_pad.len() {
         for c in 0..number_pad[r].len() {
             if let Some(v) = number_pad[r][c] {
@@ -170,13 +192,39 @@ pub fn part_two(input: &str) -> Option<u32> {
     None
 }
 
-// "179A" 64 179 
-// "v<A<AA>>^AAvA<^A>AvA^Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
+pub fn generate_combinations(vectors: Vec<Vec<String>>) -> Vec<String> {
+    if vectors.is_empty() {
+        return vec![];
+    }
+
+    // Start with a single empty string as the base case
+    let mut results: Vec<String> = vec!["".to_string()];
+
+    // For each vector of strings
+    for vec in vectors {
+        // Create a new set of combinations by appending each string from the current vector
+        // to each existing combination
+        let mut new_results = Vec::new();
+
+        for existing_combination in &results {
+            for string in &vec {
+                new_results.push(format!("{}{}", existing_combination, string));
+            }
+        }
+
+        // Replace the old results with the new ones
+        results = new_results;
+    }
+
+    results
+}
+// "179A" 64 179
+// "v<A<AA>>^AvA<^A>Av<A<A>>^AvAA<^A>Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
 // "<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
 /*
-            1               7   9   A
-Numeric: " <   ^   <   A    ^^A >>A vvvA"
-First: "  v<<A >^A v<A >>^A <AA>AvAA^Av<AAA>^A"
+            1               7     9     A
+Numeric: "<    ^   <   A    ^^A   >>A   vvvA"
+First: "  v<<A >^A v<A >>^A <AA>A vAA^A v<AAA>^A"
 Second: 76 "v<A<AA>>^AvA<^A>Av<A<A>>^AvAA<^A>Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
 "179A" 76 179 "v<A<AA>>^AvA<^A>Av<A<A>>^AvAA<^A>Av<<A>>^AAvA^Av<A>^AA<A>Av<A<A>>^AAAvA<^A>A"
 
@@ -198,12 +246,29 @@ mod tests {
     }
     #[test]
     fn test_find_pos() {
-        let number_pad:Grid = vec![
+        let number_pad: Grid = vec![
             vec![Some('7'), Some('8'), Some('9')],
             vec![Some('4'), Some('5'), Some('6')],
             vec![Some('1'), Some('2'), Some('3')],
             vec![None, Some('0'), Some('A')],
         ];
-        assert_eq!(find_pos('7', &number_pad), Some((0,0)));
+        assert_eq!(find_pos('7', &number_pad), Some((0, 0)));
+    }
+    #[test]
+    fn get_path(){
+        let direction_pad: Grid = vec![
+            vec![None, Some('^'), Some('A')],
+            vec![Some('<'), Some('v'), Some('>')],
+        ];
+        let p = gen_path(&direction_pad,"<^<A^^A>>AvvvA",(0,0));
+        println!("{} {:?}",p.len(), p);
+    }
+    #[test]
+    fn test_generate_combinations(){
+        let g = vec![vec!["<A".to_string()], vec!["^A".to_string()], vec![">^^A".to_string(), "^>^A".to_string(), "^^>A".to_string()], vec!["vvvA".to_string()]];
+        println!("{:?}", generate_combinations(g));
     }
 }
+
+//
+//["<^<A", "^<<A"]
