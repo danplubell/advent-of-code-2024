@@ -59,6 +59,31 @@ fn ways(code:&str,keypad: &HashMap<char, (usize, usize)>) -> Vec<&'static str> {
     
     for c in code.chars() {
         let next_loc = keypad.get(&c).unwrap();
+        let di:isize = (next_loc.0 - cur_loc.0) as isize;
+        let dj:isize = (next_loc.1 - cur_loc.1) as isize;
+        
+        let mut moves:String = "".to_string();
+        match di.cmp(&0) {
+            Ordering::Greater => {
+                moves.push_str(&"v".repeat(di as usize));
+            }
+            Ordering::Less => {
+                if di < 0 {
+                    moves.push_str(&"^".repeat((-di) as usize));
+                }
+            }
+            _=>()
+        }
+        match dj.cmp(&0) {
+            Ordering::Greater => {
+                moves.push_str(&">".repeat(dj as usize));
+            } 
+            Ordering::Less => {
+                if dj < 0 {
+                    moves.push_str(&"^".repeat((-dj) as usize));
+                }
+            }
+        }
     }
     Vec::new()
 }
