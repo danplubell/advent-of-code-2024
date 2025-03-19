@@ -50,17 +50,17 @@ lazy_static! {
     };
 }
 lazy_static! {
-    static ref DIR_DELTA: HashSet<(char, (i32, i32))> =
-        HashSet::from([('>', (0, 1)), ('v', (1, 0)), ('<', (0, -1)), ('^', (-1, 0)),]) ;
+    static ref DIR_DELTA: HashMap<char, (i32, i32)> =
+        HashMap::from([('>', (0, 1)), ('v', (1, 0)), ('<', (0, -1)), ('^', (-1, 0))]) ;
 }
 fn ways(code:&str,keypad: &HashMap<char, (usize, usize)>) -> Vec<&'static str> {
-    let parts:Vec<&str> = Vec::new();
-    let cur_loc = keypad.get(&'A').unwrap();
+    let mut parts:Vec<String> = Vec::new();
+    let mut cur_loc = keypad.get(&'A').unwrap();
     
     for c in code.chars() {
         let next_loc = keypad.get(&c).unwrap();
-        let di:isize = (next_loc.0 - cur_loc.0) as isize;
-        let dj:isize = (next_loc.1 - cur_loc.1) as isize;
+        let di:isize = next_loc.0 as isize - cur_loc.0 as isize;
+        let dj:isize = next_loc.1 as isize - cur_loc.1 as isize;
         
         let mut moves:String = "".to_string();
         match di.cmp(&0) {
@@ -83,12 +83,41 @@ fn ways(code:&str,keypad: &HashMap<char, (usize, usize)>) -> Vec<&'static str> {
                     moves.push_str(&"^".repeat((-dj) as usize));
                 }
             }
+            _=>()
         }
+        println!("moves: {} {:?}",c, moves);
+        let permutations = moves.chars().permutations(moves.len());
+        let raw_combos: HashSet<String> = permutations.map(|p|p.iter().collect::<String>() + "A").collect();
+
+        println!("{:?}", raw_combos);
+        let mut combos = Vec::new();
+        for combo in raw_combos {
+            let (ci,cj) = cur_loc;
+            let mut good = true;
+            let combo_slice = &combo[..combo.len()-1];
+            for c in combo_slice.chars() {
+                let (di, dj) = DIR_DELTA.get(&c).unwrap();
+                let (ci, cj) = (ci + *di as usize , cj + *dj as usize);
+                if !keypad.values().contains(&(ci, cj)) {
+                    good = false;
+                    break;
+                };
+                if good {
+                    combos.push(combo.clone())
+                }
+            }
+        }
+        parts.append(&mut combos);
+        cur_loc = next_loc;
     }
+    println!("parts: {:?}", parts);
     Vec::new()
 }
 pub fn part_one(input: &str) -> Option<u32> {
-    for input_line in input.lines() {}
+    for input_line in input.lines() {
+        let p = ways(input_line.trim(), &NUMERIC_KEYS);
+        println!("{:?}", p);
+    }
     None
 }
 
@@ -110,5 +139,10 @@ mod tests {
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, None);
+    }
+    #[test]
+    fn test_ways() {
+        let r = ways("<A^A>^^AvvvA", &DIRECTION_KEYS);
+
     }
 }
