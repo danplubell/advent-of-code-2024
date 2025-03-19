@@ -1,0 +1,66 @@
+use itertools::Itertools;
+use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet, VecDeque};
+
+advent_of_code::solution!(21);
+
+type Grid = Vec<Vec<Option<char>>>;
+
+pub fn part_one(input: &str) -> Option<u32> {
+    let total = 0;
+    for input_line in input.lines() {
+    }
+    Some(total)
+}
+fn num_pad() -> Grid {
+    vec![
+        vec![Some('7'), Some('8'), Some('9')],
+        vec![Some('4'), Some('5'), Some('6')],
+        vec![Some('1'), Some('2'), Some('3')],
+        vec![None, Some('0'), Some('A')],
+    ]
+}
+fn dir_pad() -> Grid {
+    vec![
+        vec![None, Some('^'), Some('A')],
+        vec![Some('<'), Some('v'), Some('>')],
+    ]
+}
+fn compute_seqs(keypad: &Grid) -> HashMap<(usize,usize), char> {
+    let mut pos = HashMap::new();
+    for r in 0..keypad.len() {
+        for c in 0..keypad[r].len() {
+            if let Some(ch) = keypad[r][c] {
+                pos.insert(ch, (r,c));
+            }
+        }
+    }
+    for ex in pos {
+        for ey in pos {
+            
+        }
+    }
+    
+    let seqs = HashMap::new();
+    seqs
+}
+pub fn part_two(input: &str) -> Option<u32> {
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part_one() {
+        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        assert_eq!(result, Some(126384));
+    }
+
+    #[test]
+    fn test_part_two() {
+        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
+        assert_eq!(result, None);
+    }
+}
