@@ -188,10 +188,7 @@ fn find_pos(value: char, number_pad: &Grid) -> Option<(usize, usize)> {
     }
     None
 }
-pub fn part_two(input: &str) -> Option<u32> {
-    None
-}
-
+c
 pub fn generate_combinations(vectors: Vec<Vec<String>>) -> Vec<String> {
     if vectors.is_empty() {
         return vec![];
