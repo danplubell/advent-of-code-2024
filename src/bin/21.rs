@@ -258,18 +258,17 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(total)
 }
 
-fn process_dir_seqs(dir_seqs: &HashMap<String, Vec<u32>>) -> HashMap<usize, String> {
-    dir_seqs
-        .iter()
-        .map(|(key, value)| (value.len(), key.clone()))
-        .collect()
+fn fun(s:&HashMap<i32,Vec<&str>>) {
+    
 }
+
 pub fn part_two(input: &str) -> Option<u32> {
     let dir_seqs = compute_seqs_gem(&DIR_PAD);
     let mut dir_lengths = HashMap::new();
-    for (key,value) in dir_seqs {
+    for (&key,value) in &dir_seqs {
         dir_lengths.insert(value.len(), key);
     }
+    
     
     let mut total = 0;
     for input_line in input.lines() {
