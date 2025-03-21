@@ -258,8 +258,38 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(total)
 }
 
+fn process_dir_seqs(dir_seqs: &HashMap<String, Vec<u32>>) -> HashMap<usize, String> {
+    dir_seqs
+        .iter()
+        .map(|(key, value)| (value.len(), key.clone()))
+        .collect()
+}
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let dir_seqs = compute_seqs_gem(&DIR_PAD);
+    let mut dir_lengths = HashMap::new();
+    for (key,value) in dir_seqs {
+        dir_lengths.insert(value.len(), key);
+    }
+    
+    let mut total = 0;
+    for input_line in input.lines() {
+        let seqs = compute_seqs_gem(&NUM_KEYPAD);
+        let mut r = solve(input_line, &seqs);
+        for _ in 0..25 {
+            let mut possible_next = Vec::new();
+            for seq in r.clone() {
+                let result = solve(&seq,&dir_seqs );
+                possible_next.extend( solve(&seq, &dir_seqs));
+            }
+            let min_len = possible_next.iter().map(|s| s.len() ).min().unwrap();
+            r = possible_next.iter().filter(|s| s.len() == min_len).cloned().collect();
+        }
+        let split = input_line.chars().take(3).collect::<String>();
+        let n:u32 = split.parse().unwrap();
+        total += n * r[0].len() as u32;
+        println!(" {} {} {}", n, r[0].len(), r[0]);
+    }
+    Some(total)
 }
 
 #[cfg(test)]
