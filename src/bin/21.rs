@@ -151,9 +151,7 @@ fn compute_seqs_gem(keypad: &Vec<Vec<Option<char>>>) -> HashMap<(char, char), Ve
 
     let mut seqs = HashMap::new();
     for &x in pos.keys() {
-        println!("x: {}",x );
         for &y in pos.keys() {
-            println!("y: {}",y );
             if x == y {
                 seqs.insert((x, y), vec!["A".to_string()]);
                 continue;
@@ -224,21 +222,40 @@ fn solve(string: &str, seqs: &HashMap<(char, char), Vec<String>>) -> Vec<String>
         })
         .collect()
 }
+/*
+for line in open(0).read().splitlines():
+    robot1 = solve(line, num_seqs)
+    next = robot1
+    for _ in range(2):
+        possible_next = []
+        for seq in next:
+            possible_next += solve(seq, dir_seqs)
+        minlen = min(map(len, possible_next))
+        next = [seq for seq in possible_next if len(seq) == minlen]
+    total += len(next[0]) * int(line[:-1])
+
+ */
 pub fn part_one(input: &str) -> Option<u32> {
     let dir_seqs = compute_seqs_gem(&DIR_PAD);
+    let mut total = 0;
     for input_line in input.lines() {
         let seqs = compute_seqs_gem(&NUM_KEYPAD);
-        let r = solve(input_line, &seqs);
+        let mut r = solve(input_line, &seqs);
         for _ in 0..2 {
-//            let possible_next = Vec::new();
+            let mut possible_next = Vec::new();
             for seq in r.clone() {
                let result = solve(&seq,&dir_seqs );
-                println!("result: {:?}", result)
+                possible_next.extend( solve(&seq, &dir_seqs));
             }
+            let min_len = possible_next.iter().map(|s| s.len() ).min().unwrap();
+            r = possible_next.iter().filter(|s| s.len() == min_len).cloned().collect();
         }
-
+        let split = input_line.chars().take(3).collect::<String>();
+        let n:u32 = split.parse().unwrap();
+        total += n * r[0].len() as u32;
+        println!(" {} {} {}", n, r[0].len(), r[0]);
     }
-    None
+    Some(total)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
