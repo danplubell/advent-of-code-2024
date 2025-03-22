@@ -1,6 +1,7 @@
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet, VecDeque};
-use itertools::Itertools;
+use cached::proc_macro::cached;
 
 advent_of_code::solution!(21);
 type KeyPad = Vec<Vec<Option<char>>>;
@@ -164,7 +165,7 @@ fn compute_seqs_gem(keypad: &Vec<Vec<Option<char>>>) -> HashMap<(char, char), Ve
 
             while !q.is_empty() {
                 let ((r, c), moves) = q.pop_front().unwrap();
-               
+
                 let neighbors = vec![
                     (r.wrapping_sub(1), c, "^"),
                     (r + 1, c, "v"),
@@ -181,12 +182,11 @@ fn compute_seqs_gem(keypad: &Vec<Vec<Option<char>>>) -> HashMap<(char, char), Ve
                     }
                     if keypad[nr][nc] == Some(y) {
                         if optimal < (moves.len() + 1) as f64 {
-                           found_target = true;
+                            found_target = true;
                             break;
                         }
                         optimal = (moves.len() + 1) as f64;
                         possibilities.push(format!("{}{}{}", moves, nm, "A"));
-
                     } else {
                         q.push_back(((nr, nc), format!("{}{}", moves, nm)));
                     }
@@ -211,7 +211,7 @@ fn solve(string: &str, seqs: &HashMap<(char, char), Vec<String>>) -> Vec<String>
     // Generate the Cartesian product of all options
     options
         .iter()
-        .map(|vec| vec.iter())  // Convert each &Vec<String> to an iterator over &String
+        .map(|vec| vec.iter()) // Convert each &Vec<String> to an iterator over &String
         .multi_cartesian_product()
         .map(|product| {
             product
@@ -222,6 +222,7 @@ fn solve(string: &str, seqs: &HashMap<(char, char), Vec<String>>) -> Vec<String>
         })
         .collect()
 }
+
 /*
 for line in open(0).read().splitlines():
     robot1 = solve(line, num_seqs)
@@ -244,49 +245,102 @@ pub fn part_one(input: &str) -> Option<u32> {
         for _ in 0..2 {
             let mut possible_next = Vec::new();
             for seq in r.clone() {
-               let result = solve(&seq,&dir_seqs );
-                possible_next.extend( solve(&seq, &dir_seqs));
+                let result = solve(&seq, &dir_seqs);
+                possible_next.extend(solve(&seq, &dir_seqs));
             }
-            let min_len = possible_next.iter().map(|s| s.len() ).min().unwrap();
-            r = possible_next.iter().filter(|s| s.len() == min_len).cloned().collect();
+            let min_len = possible_next.iter().map(|s| s.len()).min().unwrap();
+            r = possible_next
+                .iter()
+                .filter(|s| s.len() == min_len)
+                .cloned()
+                .collect();
         }
         let split = input_line.chars().take(3).collect::<String>();
-        let n:u32 = split.parse().unwrap();
+        let n: u32 = split.parse().unwrap();
         total += n * r[0].len() as u32;
         println!(" {} {} {}", n, r[0].len(), r[0]);
     }
     Some(total)
 }
 
-fn fun(s:&HashMap<i32,Vec<&str>>) {
-    
+#[cached]
+fn compute_length(seq: String, depth: i32)->usize {
+    let dir_seqs = compute_seqs_gem(&DIR_PAD);
+    let dir_lengths: HashMap<_, _> = dir_seqs
+        .iter()
+        .map(|(key, value)| (key.clone(), value[0].len()))
+        .collect();
+
+    if depth == 1 {
+        return "A"
+            .chars()
+            .chain(seq.chars())
+            .zip(seq.chars())
+            .map(|(x, y)| dir_lengths.get(&(x, y)).unwrap())
+            .sum();
+    }
+    let mut length = 0usize;
+    let c = "A".to_owned() + &seq;
+    let z: Vec<_> = c.chars().zip(seq.chars()).collect();
+    for (x, y) in z {
+        if let Some(s) = dir_seqs.get(&(x, y)) {
+            length += s
+                .iter()
+                .map(|st| compute_length(st.clone(), depth - 1))
+                .min()
+                .unwrap();
+        }
+    }
+    length
+}
+fn compute_length1(
+    seq: &str,
+    depth: i32,
+    dir_lengths: &HashMap<(char, char), usize>,
+    dir_seqs: &HashMap<(char, char), Vec<String>>,
+) -> usize {
+    if depth == 1 {
+        return "A"
+            .chars()
+            .chain(seq.chars())
+            .zip(seq.chars())
+            .map(|(x, y)| dir_lengths.get(&(x, y)).unwrap())
+            .sum();
+    }
+    let mut length = 0usize;
+    let c = "A".to_owned() + seq;
+    let z: Vec<_> = c.chars().zip(seq.chars()).collect();
+    for (x, y) in z {
+        if let Some(s) = dir_seqs.get(&(x, y)) {
+            length += s
+                .iter()
+                .map(|st| compute_length(st.clone(), depth - 1))
+                .min()
+                .unwrap();
+        }
+    }
+    length
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u64> {
     let dir_seqs = compute_seqs_gem(&DIR_PAD);
-    let mut dir_lengths = HashMap::new();
-    for (&key,value) in &dir_seqs {
-        dir_lengths.insert(value.len(), key);
-    }
-    
-    
+    let dir_lengths: HashMap<_, _> = dir_seqs
+        .iter()
+        .map(|(key, value)| (key.clone(), value[0].len()))
+        .collect();
+
     let mut total = 0;
     for input_line in input.lines() {
         let seqs = compute_seqs_gem(&NUM_KEYPAD);
-        let mut r = solve(input_line, &seqs);
-        for _ in 0..25 {
-            let mut possible_next = Vec::new();
-            for seq in r.clone() {
-                let result = solve(&seq,&dir_seqs );
-                possible_next.extend( solve(&seq, &dir_seqs));
-            }
-            let min_len = possible_next.iter().map(|s| s.len() ).min().unwrap();
-            r = possible_next.iter().filter(|s| s.len() == min_len).cloned().collect();
-        }
+        let mut inputs = solve(input_line, &seqs);
+        let length = inputs
+            .iter()
+            .map(|s| compute_length(s.to_owned(), 25))
+            .min()
+            .unwrap();
         let split = input_line.chars().take(3).collect::<String>();
-        let n:u32 = split.parse().unwrap();
-        total += n * r[0].len() as u32;
-        println!(" {} {} {}", n, r[0].len(), r[0]);
+        let n: u32 = split.parse().unwrap();
+        total += n as u64 * length as u64;
     }
     Some(total)
 }
