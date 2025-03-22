@@ -32,10 +32,11 @@ struct Number {
     price: i64,
     change: Option<i64>,
 }
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Buyer {
     numbers: Vec<Number>,
     seqs: Vec<(Vec<Change>, Price)>,
+    map: HashMap<(Change,Change,Change,Change), Price>,
 }
 type Price = i64;
 type Change = i64;
@@ -48,7 +49,7 @@ impl Buyer {
         };
         let mut numbers = Vec::new();
         //get sequence of numbers
-        for i in 0..10 {
+        for i in 0..2000 {
             if i == 0 {
                 numbers.push(secret_number);
                 continue;
@@ -90,19 +91,32 @@ impl Buyer {
             .map(|(vec, num)| (vec.into_iter().flatten().collect(), num))
             .collect();
         // sort numbers in reverse order by price
-        let seqs = seqs
+        let seqs:  Vec<(Vec<Change>, Price)> = seqs
             .into_iter()
             .sorted_by(|a, b| Ord::cmp( &b.1,&a.1))
             .collect();
-        
-       // println!("{:?}", seqs);
-        Self { numbers, seqs }
+        let mut map = HashMap::new();
+        seqs.iter().for_each(|(vec, price)| {
+            let key = (vec[0], vec[1], vec[2], vec[3]);
+            let e = map.entry(key).or_default();
+            if price > e {
+                map.insert(key, *price);
+            }
+        });
+        Self { numbers, seqs, map }
     }
-    fn get_price_for_sequence(&self, seq: &[Change]) -> Price {
+    fn get_max_price_for_sequence(&self, seq: &[Change]) -> Option<&Price> {
+        let key = (seq[0], seq[1], seq[2], seq[3]);
+        self.map.get(&key)
+        /*
+        self.seqs.iter().filter(|(vec, _)|
+            seq == vec
+        ).map(|(_,price)| price).collect::<Vec<_>>().iter().max().map(|&&n|n)
         
+         */
     }
 }
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<i64> {
     let mut buyers: Vec<Buyer> = Vec::new();
     for l in input.lines() {
         let s = l.parse::<i64>().ok();
@@ -118,10 +132,35 @@ pub fn part_two(input: &str) -> Option<u32> {
             seqs.entry(*price).or_default().insert(s);
         })
     });
-    for (key,value) in seqs {
-        
+    let mut total = 0;
+    let mut total_seq: (Change, Change, Change, Change) = (0,0,0,0);
+    let mut visited = HashSet::new();
+    // go through all the sequences for a key
+    println!("seq count: {}", seqs.len() );
+    println!("buyers count: {}", buyers.len() );
+    for (key,value) in seqs.into_iter().rev() {
+        println!("key: {} {}", key, value.len());
+        for seq in value {
+            if visited.contains(&seq) {
+                continue;
+            }
+            let mut total_for_seq = 0;
+            for buyer in &mut buyers {
+                let s = vec![seq.0, seq.1, seq.2, seq.3];
+                let p = buyer.get_max_price_for_sequence(&s);
+                if let Some(p) = p {
+                    total_for_seq += p;
+                }
+            }
+            if total_for_seq > total {
+                total = total_for_seq;
+                total_seq= seq.clone();
+            }
+            visited.insert(seq);
+        }
     }
-    None
+    println!("Part two: {} {:?}", total, total_seq);
+    Some(total)
 }
 
 #[cfg(test)]
