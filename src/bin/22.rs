@@ -88,10 +88,12 @@ impl Buyer {
             .flatten()
             .map(|(vec, num)| (vec.into_iter().flatten().collect(), num))
             .collect();
+        // sort numbers in reverse order by price
         let seqs = seqs
             .into_iter()
             .sorted_by(|a, b| Ord::cmp( &b.1,&a.1))
             .collect();
+        
         println!("{:?}", seqs);
         Self { numbers, seqs }
     }
@@ -102,6 +104,7 @@ pub fn part_two(input: &str) -> Option<u32> {
         let s = l.parse::<i64>().ok()?;
         buyers.push(Buyer::new(s));
     }
+    
 
     None
 }
