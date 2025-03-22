@@ -34,9 +34,9 @@ struct Number {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Buyer {
-    numbers: Vec<Number>,
-    seqs: Vec<(Vec<Change>, Price)>,
-    map: HashMap<(Change,Change,Change,Change), Price>,
+    numbers: Vec<Number>, // list of secret numbers
+    seqs: Vec<(Vec<Change>, Price)>, // all the sequences that are associated with a price
+    map: HashMap<(Change,Change,Change,Change), Price>, // map used to lookup the first instance of a sequence
 }
 type Price = i64;
 type Change = i64;
@@ -66,6 +66,8 @@ impl Buyer {
             numbers.push(secret_number);
         }
         //sequences and prices
+        // build a list of all the sequences for a price
+        // a sequence is the 4 previous numbers
         let seqs = numbers.split_at(1).1;
         let seqs: Vec<Option<(Vec<Option<Change>>, Price)>> = seqs
             .iter()
@@ -84,36 +86,26 @@ impl Buyer {
                 None
             })
             .collect();
-        // wrap the options
+        // unwrap the options
         let seqs: Vec<(Vec<Change>, Price)> = seqs
             .into_iter()
             .flatten()
             .map(|(vec, num)| (vec.into_iter().flatten().collect(), num))
             .collect();
-        // sort numbers in reverse order by price
-        let seqs:  Vec<(Vec<Change>, Price)> = seqs
-            .into_iter()
-            .sorted_by(|a, b| Ord::cmp( &b.1,&a.1))
-            .collect();
         let mut map = HashMap::new();
+        // We want a map so that we can look up the first price for a sequence
         seqs.iter().for_each(|(vec, price)| {
             let key = (vec[0], vec[1], vec[2], vec[3]);
-            let e = map.entry(key).or_default();
-            if price > e {
+            let e = map.get(&key);
+            if e.is_none() {
                 map.insert(key, *price);
             }
         });
         Self { numbers, seqs, map }
     }
-    fn get_max_price_for_sequence(&self, seq: &[Change]) -> Option<&Price> {
-        let key = (seq[0], seq[1], seq[2], seq[3]);
-        self.map.get(&key)
-        /*
-        self.seqs.iter().filter(|(vec, _)|
-            seq == vec
-        ).map(|(_,price)| price).collect::<Vec<_>>().iter().max().map(|&&n|n)
-        
-         */
+    // get the first price in the list of sequences of the buyer
+    fn get_first_price_for_sequence(&self, seq: (Change, Change, Change, Change)) -> Option<&Price> {
+        self.map.get(&seq)
     }
 }
 pub fn part_two(input: &str) -> Option<i64> {
@@ -136,25 +128,24 @@ pub fn part_two(input: &str) -> Option<i64> {
     let mut total_seq: (Change, Change, Change, Change) = (0,0,0,0);
     let mut visited = HashSet::new();
     // go through all the sequences for a key
-    println!("seq count: {}", seqs.len() );
+    println!("seq count: {} {:?}", seqs.len(), seqs.keys() );
     println!("buyers count: {}", buyers.len() );
     for (key,value) in seqs.into_iter().rev() {
         println!("key: {} {}", key, value.len());
         for seq in value {
+            let mut total_for_seq = 0;
             if visited.contains(&seq) {
                 continue;
             }
-            let mut total_for_seq = 0;
             for buyer in &mut buyers {
-                let s = vec![seq.0, seq.1, seq.2, seq.3];
-                let p = buyer.get_max_price_for_sequence(&s);
+                let p = buyer.get_first_price_for_sequence(seq);
                 if let Some(p) = p {
                     total_for_seq += p;
                 }
             }
             if total_for_seq > total {
                 total = total_for_seq;
-                total_seq= seq.clone();
+                total_seq= seq;
             }
             visited.insert(seq);
         }
