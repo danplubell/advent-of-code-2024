@@ -1,3 +1,4 @@
+use std::collections::{BTreeMap, HashMap, HashSet};
 use itertools::Itertools;
 
 advent_of_code::solution!(22);
@@ -47,7 +48,7 @@ impl Buyer {
         };
         let mut numbers = Vec::new();
         //get sequence of numbers
-        for i in 0..2000 {
+        for i in 0..10 {
             if i == 0 {
                 numbers.push(secret_number);
                 continue;
@@ -63,7 +64,6 @@ impl Buyer {
             }
             numbers.push(secret_number);
         }
-        println!("{:?}", numbers);
         //sequences and prices
         let seqs = numbers.split_at(1).1;
         let seqs: Vec<Option<(Vec<Option<Change>>, Price)>> = seqs
@@ -71,7 +71,8 @@ impl Buyer {
             .enumerate()
             .skip(4)
             .map(|(idx, number)| {
-                let prev_4 = seqs.get((idx - 4)..idx)?;
+                let prev_4 = seqs.get((idx - 4)..idx).unwrap();
+                
                 let seq = prev_4
                     .iter()
                     .map(|n| n.change)
@@ -94,18 +95,32 @@ impl Buyer {
             .sorted_by(|a, b| Ord::cmp( &b.1,&a.1))
             .collect();
         
-        println!("{:?}", seqs);
+       // println!("{:?}", seqs);
         Self { numbers, seqs }
+    }
+    fn get_price_for_sequence(&self, seq: &[Change]) -> Price {
+        
     }
 }
 pub fn part_two(input: &str) -> Option<u32> {
     let mut buyers: Vec<Buyer> = Vec::new();
     for l in input.lines() {
-        let s = l.parse::<i64>().ok()?;
-        buyers.push(Buyer::new(s));
+        let s = l.parse::<i64>().ok();
+        if let Some(sn)  = s{
+            buyers.push(Buyer::new(s.unwrap()));
+        }
     }
-    
-
+    // BTreeMap keeps them sorted
+    let mut seqs: BTreeMap<Price, HashSet<(Change, Change, Change, Change)>> = BTreeMap::new();
+    buyers.iter().for_each(|buyer| {
+        buyer.seqs.iter().for_each(|(vec, price)| {
+            let s = (vec[0], vec[1], vec[2], vec[3]);
+            seqs.entry(*price).or_default().insert(s);
+        })
+    });
+    for (key,value) in seqs {
+        
+    }
     None
 }
 
