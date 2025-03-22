@@ -21,7 +21,7 @@ pub fn part_one(input: &str) -> Option<i64> {
         }
         numbers.push(new_s);
     }
-    let total:i64 = numbers.iter().sum();
+    let total: i64 = numbers.iter().sum();
     Some(total)
 }
 
@@ -34,11 +34,12 @@ struct Number {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 struct Buyer {
     numbers: Vec<Number>,
-    seqs: Vec<(Vec<i64>, i64)>,
+    seqs: Vec<(Vec<Change>, Price)>,
 }
+type Price = i64;
+type Change = i64;
 impl Buyer {
     fn new(first_number: i64) -> Buyer {
-       
         let mut secret_number = Number {
             number: first_number,
             price: first_number % 10,
@@ -49,14 +50,14 @@ impl Buyer {
         for i in 0..2000 {
             if i == 0 {
                 numbers.push(secret_number);
-                continue
+                continue;
             }
             secret_number.number = calc_next(secret_number.number);
             secret_number.price = secret_number.number % 10;
 
             if i > 0 {
                 let n1 = numbers.get((i - 1) as usize).unwrap();
-                secret_number.change = Some(secret_number.price - n1.price  );
+                secret_number.change = Some(secret_number.price - n1.price);
             } else {
                 secret_number.change = None;
             }
@@ -64,34 +65,35 @@ impl Buyer {
         }
         println!("{:?}", numbers);
         //sequences and prices
-        let seqs = numbers.split_at(0).1;
-        let seqs:  Vec<Option<(Vec<Option<i64>>, i64)>>  = seqs.chunks(4).map(|c| {
-            let seq = c.iter().map(|n| n.change).collect::<Vec<Option<i64>>>();
-            if seq.len() == 4 {
-                return Some((seq,c.last().unwrap().price));
-            }
-            None
-        }).collect();
-        let seqs: Vec<(Vec<i64>, i64)> = seqs.into_iter()
-            .filter_map(|option| option)
-            .map(|(vec, num)| (
-                vec.into_iter().filter_map(|inner_option| inner_option).collect(),
-                num
-            ))
+        let seqs = numbers.split_at(1).1;
+        let seqs: Vec<Option<(Vec<Option<Change>>, Price)>> = seqs
+            .iter()
+            .enumerate()
+            .skip(4)
+            .map(|(idx, number)| {
+                let prev_4 = seqs.get((idx - 4)..idx)?;
+                let seq = prev_4
+                    .iter()
+                    .map(|n| n.change)
+                    .collect::<Vec<Option<Change>>>();
+                if seq.len() == 4 {
+                    return Some((seq, prev_4.last().unwrap().price));
+                }
+                None
+            })
             .collect();
-//        let seqs:  Vec<Option<(Vec<Option<i64>>, i64)>> = numbers.chunks(4).map(|c| {
-//            let seq = c.iter().map(|n| n.change).collect::<Vec<Option<i64>>>();
-//            if seq.len() == 4 {
-//                return Some((seq,c.last().unwrap().price));
-//            }
-//            None
-//        }).collect();
-        
+        // wrap the options
+        let seqs: Vec<(Vec<Change>, Price)> = seqs
+            .into_iter()
+            .flatten()
+            .map(|(vec, num)| (vec.into_iter().flatten().collect(), num))
+            .collect();
+        let seqs = seqs
+            .into_iter()
+            .sorted_by(|a, b| Ord::cmp( &b.1,&a.1))
+            .collect();
         println!("{:?}", seqs);
-        Self {
-            numbers,
-            seqs
-        }
+        Self { numbers, seqs }
     }
 }
 pub fn part_two(input: &str) -> Option<u32> {
