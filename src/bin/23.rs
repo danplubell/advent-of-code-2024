@@ -1,7 +1,43 @@
+use std::collections::{HashMap, HashSet};
+
 advent_of_code::solution!(23);
 
-pub fn part_one(input: &str) -> Option<u32> {
-    None
+pub fn part_one(input: &str) -> Option<usize> {
+    let mut node_map: HashMap<&str, HashSet<&str>> = HashMap::new();
+    for line in input.lines() {
+        let split = line.split('-').collect::<Vec<_>>();
+        node_map.entry(split[0]).or_default().insert(split[1]);
+        node_map.entry(split[1]).or_default().insert(split[0]);
+    }
+    let mut triples = HashSet::new();
+    for node in node_map.iter() {
+        for node1 in node_map.iter() {
+            let l = node1.1;
+            let target = node.0;
+            // does the node contain the parent
+            if let Some(s) = l.iter().find(|n| *n == target) {
+                // the target is in the list
+                // compare lists for common nodes
+                node.1.iter().for_each(|n1| {
+                    if node1.1.contains(n1) {
+                        let mut t = vec![target, *n1, node1.0];
+                        t.sort();
+                        let mut has_t = false;
+                        t.iter().for_each(|n2| {
+                            let c = n2.to_string().chars().next().unwrap();
+                            if c == 't' {
+                                has_t = true;
+                            }
+                        });
+                        if has_t {
+                            triples.insert(t);
+                        }
+                    }
+                })
+            }
+        }
+    }
+    Some(triples.len())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
