@@ -49,8 +49,10 @@ fn search<'a>(
         if required.contains(n) {
             continue;
         }
+        // all elements in required 
+        let list = node_map.get(n).unwrap();
         let r = required.iter().all(|q| {
-            node_map.get(n).unwrap().contains(*q) });
+           list.contains(*q) });
         if !r {
             continue;
         }
@@ -87,7 +89,7 @@ pub fn part_two(input: &str) -> Option<String> {
     });
     Some(max_party.iter().join(","))
 }
-// ae,bf,br,cc,fg,fn,it,jt,ku,lr,mc,nj,ox,pa,pp,pq,qm,qv,qx,rb,sh,tl,uo,vj,ws,wx == bad
+// ar,ep,ih,ju,jx,le,ol,pk,pm,pp,xf,yu,zg == good
 #[cfg(test)]
 mod tests {
     use super::*;
