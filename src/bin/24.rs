@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 advent_of_code::solution!(24);
 
@@ -36,8 +36,8 @@ impl Gate {
         }
     }
 }
-pub fn part_one(input: &str) -> Option<u32> {
-    let mut wires = HashMap::new();
+pub fn part_one(input: &str) -> Option<u64> {
+    let mut wires: BTreeMap<String, Wire> = BTreeMap::new();
     let mut gates = Vec::new();
     for line in input.lines() {
         if line.is_empty() {
@@ -46,31 +46,92 @@ pub fn part_one(input: &str) -> Option<u32> {
         if line.contains(':') {
             let parts = line.split(": ").collect::<Vec<_>>();
             wires.insert(
-                parts[0],
+                parts[0].parse().unwrap(),
                 Wire::new(parts[0].to_string(), wire_value(parts[1])),
             );
             continue;
         };
         let parts = line.split(" ").collect::<Vec<_>>();
-        wires.entry(parts[0]).or_insert_with(|| Wire::new(parts[0].to_string(), wire_value(parts[0])));
-        wires.entry(parts[2]).or_insert_with(|| Wire::new(parts[2].to_string(), wire_value(parts[2])));
-        wires.entry(parts[4]).or_insert_with(|| Wire::new(parts[4].to_string(), wire_value(parts[4])));
+        wires
+            .entry(parts[0].parse().unwrap())
+            .or_insert_with(|| Wire::new(parts[0].to_string(), None));
+        wires
+            .entry(parts[2].parse().unwrap())
+            .or_insert_with(|| Wire::new(parts[2].to_string(), None));
+        wires
+            .entry(parts[4].parse().unwrap())
+            .or_insert_with(|| Wire::new(parts[4].to_string(), None));
 
         let op = match parts[1] {
             "AND" => Operator::And,
             "OR" => Operator::Or,
-            "Xor" => Operator::Xor,
+            "XOR" => Operator::Xor,
             _ => unreachable!(),
         };
-        let gate = Gate::new((parts[0].to_string(), parts[2].to_string()), parts[4].to_string(), op);
+        let gate = Gate::new(
+            (parts[0].to_string(), parts[2].to_string()),
+            parts[4].to_string(),
+            op,
+        );
         gates.push(gate);
     }
     let mut done = false;
     // loop through the gates and apply the operations until there aren't anymore None values
     while !done {
-        done = true;
+        let mut cnt = 0;
+        for gate in &mut gates {
+            if !calculate_gate(gate, &mut wires) {
+                cnt += 1;
+            }
+        }
+        done = cnt == 0;
     }
-    None
+//    wires.iter().for_each(|w| println!("{:?} {:?}", w.1.name, w.1.value));
+//    let mut values = wires.values().map(|w|format!("{:?}: {:?}",w.name, w.value)).collect::<Vec<_>>();
+//    values.sort();
+   // println!("{:?}",values);
+    let l: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
+   
+
+    let mut l = l
+        .iter()
+        .map(|w| w.value.unwrap().to_string())
+        .collect::<Vec<_>>();
+    let l = l.iter().rev().cloned().collect::<Vec<_>>();
+    let l = l.join("");
+    
+
+    Some(u64::from_str_radix(&l, 2).unwrap())
+}
+
+fn calculate_gate(gate: &mut Gate, wires: &mut BTreeMap<String, Wire>) -> bool {
+    let out = wires.get(&gate.output);
+    let name = out.unwrap().name.as_str();
+//    let out_v = match out {
+//        Some(wire) => wire.value,
+//        None => None,
+//    };
+//    if out_v.is_some() {
+//        return true;
+//    };
+    let in1 = wires.get(gate.inputs.0.as_str()).and_then(|w| w.value);
+    if in1.is_none() {
+        return false;
+    }
+    let in2 = wires.get(gate.inputs.1.as_str()).and_then(|w| w.value);
+    if in2.is_none() {
+        return false;
+    }
+    let i1 = in2.unwrap();
+    let i2 = in1.unwrap();
+    let v: i32 = match gate.operator {
+        Operator::And => i1 & i2,
+        Operator::Xor => i1 ^ i2,
+        Operator::Or => i1 | i2,
+    };
+    
+    wires.insert(name.to_string(), Wire::new(name.to_string(), Some(v)));
+    true
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
