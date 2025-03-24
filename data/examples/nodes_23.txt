@@ -1,0 +1,18 @@
+{
+"ta": {"kh", "ka", "co", "de"},
+"co": {"ta", "tc", "de", "ka"},
+"aq": {"vc", "yn", "wq", "cg"},
+"de": {"cg", "co", "ta", "ka"},
+"ka": {"ta", "de", "co", "tb"},
+"kh":{"qp", "tc", "ta", "ub"},
+"td": {"yn", "tc", "wh", "qp"},
+"ub": {"vc", "wq", "qp", "kh"},
+"wq": {"vc", "ub", "tb", "aq"},
+"tc": {"wh", "td", "kh", "co"},
+"cg": {"de", "yn", "aq", "tb"},
+"qp": {"kh", "wh", "ub", "td"},
+"wh": {"td", "qp", "tc", "yn"},
+"yn": {"td", "cg", "wh", "aq"},
+"tb": {"cg", "wq", "ka", "vc"},
+"vc": {"wq", "ub", "aq", "tb"}
+}
