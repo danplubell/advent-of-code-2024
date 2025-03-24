@@ -22,13 +22,13 @@ fn wire_value(wire: &str) -> Option<i32> {
     Option::from(wire.to_string().parse::<i32>().unwrap())
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Gate<'a> {
-    inputs: (&'a Wire, &'a Wire),
-    output: &'a Wire,
+struct Gate {
+    inputs: (String, String),
+    output: String,
     operator: Operator,
 }
-impl<'a> Gate<'a> {
-    fn new(inputs: (&'a Wire, &'a Wire), output: &'a Wire, operator: Operator) -> Gate<'a> {
+impl Gate {
+    fn new(inputs: (String, String), output: String, operator: Operator) -> Gate {
         Gate {
             inputs,
             output,
@@ -52,19 +52,9 @@ pub fn part_one(input: &str) -> Option<u32> {
             continue;
         };
         let parts = line.split(" ").collect::<Vec<_>>();
-        if !wires.contains_key(&parts[0]) {
-            wires.insert(parts[0], Wire::new(parts[0].to_string(), None));
-        }
-        let in1 = wires.get_mut(&parts[0]).unwrap();
-        if !wires.contains_key(&parts[0]) {
-            wires.insert(parts[0], Wire::new(parts[0].to_string(), None));
-        }
-        let in2 = wires.get_mut(&parts[2]).unwrap();
-
-        if !wires.contains_key(&parts[4]) {
-            wires.insert(parts[0], Wire::new(parts[4].to_string(), None));
-        }
-        let out = wires.get_mut(&parts[4]).unwrap();
+        wires.entry(parts[0]).or_insert_with(|| Wire::new(parts[0].to_string(), wire_value(parts[0])));
+        wires.entry(parts[2]).or_insert_with(|| Wire::new(parts[2].to_string(), wire_value(parts[2])));
+        wires.entry(parts[4]).or_insert_with(|| Wire::new(parts[4].to_string(), wire_value(parts[4])));
 
         let op = match parts[1] {
             "AND" => Operator::And,
@@ -72,8 +62,13 @@ pub fn part_one(input: &str) -> Option<u32> {
             "Xor" => Operator::Xor,
             _ => unreachable!(),
         };
-        let gate = Gate::new((in1, in2), out, op);
+        let gate = Gate::new((parts[0].to_string(), parts[2].to_string()), parts[4].to_string(), op);
         gates.push(gate);
+    }
+    let mut done = false;
+    // loop through the gates and apply the operations until there aren't anymore None values
+    while !done {
+        done = true;
     }
     None
 }
