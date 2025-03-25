@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 advent_of_code::solution!(24);
 
@@ -138,6 +138,18 @@ pub fn part_two(input: &str) -> Option<u32> {
     None
 }
 
+fn generate_unique_pairs<T: Clone + PartialEq>(items: &[T]) -> HashSet<(T, T)> {
+    let mut pairs = Vec::new();
+    let n = items.len();
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            pairs.push((items[i].clone(), items[j].clone()));
+        }
+    }
+
+    pairs
+}
 #[cfg(test)]
 mod tests {
     use super::*;
