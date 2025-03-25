@@ -135,8 +135,85 @@ fn calculate_gate(gate: &mut Gate, wires: &mut BTreeMap<String, Wire>) -> bool {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let mut wires: BTreeMap<String, Wire> = BTreeMap::new();
+    let mut gates = Vec::new();
+    let mut outputs = Vec::new();
+    for line in input.lines() {
+        if line.is_empty() {
+            continue;
+        }
+        if line.contains(':') {
+            let parts = line.split(": ").collect::<Vec<_>>();
+            wires.insert(
+                parts[0].parse().unwrap(),
+                Wire::new(parts[0].to_string(), wire_value(parts[1])),
+            );
+            continue;
+        };
+        let parts = line.split(" ").collect::<Vec<_>>();
+        wires
+            .entry(parts[0].parse().unwrap())
+            .or_insert_with(|| Wire::new(parts[0].to_string(), None));
+        wires
+            .entry(parts[2].parse().unwrap())
+            .or_insert_with(|| Wire::new(parts[2].to_string(), None));
+        wires
+            .entry(parts[4].parse().unwrap())
+            .or_insert_with(|| Wire::new(parts[4].to_string(), None));
+
+        let op = match parts[1] {
+            "AND" => Operator::And,
+            "OR" => Operator::Or,
+            "XOR" => Operator::Xor,
+            _ => unreachable!(),
+        };
+        let gate = Gate::new(
+            (parts[0].to_string(), parts[2].to_string()),
+            parts[4].to_string(),
+            op,
+        );
+        gates.push(gate);
+        outputs.push(parts[4].to_string());
+    }
+    let temp_gates = Vec::new();
+    gates.iter().for_each(|g| {
+        gates.iter().for_each(|g| {
+            //swap
+            
+        })
+    });
+    let x_list: Vec<_> = wires.values().filter(|w| w.name.starts_with("x")).collect();
+    let l = x_list
+        .iter()
+        .map(|w| w.value.unwrap().to_string())
+        .collect::<Vec<_>>();
+    let l = l.iter().rev().cloned().collect::<Vec<_>>();
+    let x_bin_string = l.join("");
+    let x = u64::from_str_radix(&x_bin_string, 2).unwrap();
+    
+    let y_list: Vec<_> = wires.values().filter(|w| w.name.starts_with("y")).collect();
+    let l = y_list
+        .iter()
+        .map(|w| w.value.unwrap().to_string())
+        .collect::<Vec<_>>();
+    let l = l.iter().rev().cloned().collect::<Vec<_>>();
+    let y_bin_string = l.join("");
+    let y = u64::from_str_radix(&y_bin_string, 2).unwrap();
+
+    let z_list: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
+    let l = y_list
+        .iter()
+        .map(|w| w.value.unwrap().to_string())
+        .collect::<Vec<_>>();
+    let l = l.iter().rev().cloned().collect::<Vec<_>>();
+    let z_bin_string = l.join("");
+    let z = u64::from_str_radix(&z_bin_string, 2).unwrap();
+
+    println!("z={} y={} x+y={} z={}",x,y, y + x, z);
+
     None
 }
+// 55544677167336
 
 fn generate_unique_pairs<T: Clone + PartialEq>(items: &[T]) -> HashSet<(T, T)> {
     let mut pairs = Vec::new();
