@@ -138,6 +138,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     let mut wires: BTreeMap<String, Wire> = BTreeMap::new();
     let mut gates = Vec::new();
     let mut outputs = Vec::new();
+    let mut gate_strings = Vec::new();
     for line in input.lines() {
         if line.is_empty() {
             continue;
@@ -150,6 +151,7 @@ pub fn part_two(input: &str) -> Option<u32> {
             );
             continue;
         };
+        gate_strings.push(line.to_string());
         let parts = line.split(" ").collect::<Vec<_>>();
         wires
             .entry(parts[0].parse().unwrap())
@@ -175,13 +177,18 @@ pub fn part_two(input: &str) -> Option<u32> {
         gates.push(gate);
         outputs.push(parts[4].to_string());
     }
-    let temp_gates = Vec::new();
-    gates.iter().for_each(|g| {
-        gates.iter().for_each(|g| {
-            //swap
-            
-        })
-    });
+    let mut done = false;
+    // loop through the gates and apply the operations until there aren't anymore None values
+    while !done {
+        let mut cnt = 0;
+        for gate in &mut gates {
+            if !calculate_gate(gate, &mut wires) {
+                cnt += 1;
+            }
+        }
+        done = cnt == 0;
+    }
+
     let x_list: Vec<_> = wires.values().filter(|w| w.name.starts_with("x")).collect();
     let l = x_list
         .iter()
@@ -201,7 +208,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     let y = u64::from_str_radix(&y_bin_string, 2).unwrap();
 
     let z_list: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
-    let l = y_list
+    let l = z_list
         .iter()
         .map(|w| w.value.unwrap().to_string())
         .collect::<Vec<_>>();
@@ -209,24 +216,49 @@ pub fn part_two(input: &str) -> Option<u32> {
     let z_bin_string = l.join("");
     let z = u64::from_str_radix(&z_bin_string, 2).unwrap();
 
-    println!("z={} y={} x+y={} z={}",x,y, y + x, z);
-
+    println!("x={} y={} x+y={} z={} {}",x,y, y + x, z, z_bin_string);
+    // create pairs and groups of 4 pairs
+    // run these modifications through the calculations to see if one of the pairs gives the correct number
+    let gate_pairs = create_unique_pairs(&gate_strings);
+    // create groups of 4 pairs
+    let swaps = create_unique_quads(&gate_pairs);
+    swaps.iter().for_each(|g| {
+        println!("{:?}",g );
+    });
     None
 }
 // 55544677167336
+//55544677167336
 
-fn generate_unique_pairs<T: Clone + PartialEq>(items: &[T]) -> HashSet<(T, T)> {
-    let mut pairs = Vec::new();
-    let n = items.len();
+fn create_unique_pairs<T: Clone + PartialEq + Ord>(vec: &[T]) -> Vec<(T, T)> {
+    let mut result = Vec::new();
 
-    for i in 0..n {
-        for j in (i + 1)..n {
-            pairs.push((items[i].clone(), items[j].clone()));
+    for i in 0..vec.len() {
+        for j in (i+1)..vec.len() {
+            // This ensures we only include each pair once
+            // and also skips pairs with the same element (when vec has duplicates)
+            if vec[i] != vec[j] {
+                result.push((vec[i].clone(), vec[j].clone()));
+            }
         }
     }
 
-    pairs
+    result
 }
+fn create_unique_quads<T: Clone + PartialEq + Ord>(vec: &[T]) -> Vec<(T, T, T, T)> {
+    let mut swaps = Vec::new();
+    for i in 0..vec.len() {
+        for j in (i+1)..vec.len() {
+            for k in (j+1)..vec.len() {
+                for l in (k+1)..vec.len() {
+                    swaps.push((vec[i].clone(), vec[j].clone(), vec[k].clone(),   vec[l].clone()));
+                }
+            }
+        }
+    }
+    swaps
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
