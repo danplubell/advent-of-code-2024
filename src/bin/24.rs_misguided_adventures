@@ -83,26 +83,6 @@ pub fn part_one(input: &str) -> Option<u64> {
             if !calculate_gate(gate, &mut wires) {
                 cnt += 1;
             }
-            let l: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
-
-
-            let mut l = l
-                .iter()
-                .map(|w| {
-                    if w.value.is_some() {
-                        w.value.unwrap().to_string()
-                    } else {
-                        "0".to_string()
-                    }
-                    })
-                .collect::<Vec<_>>();
-            let l = l.iter().rev().cloned().collect::<Vec<_>>();
-            let l = l.join("");
-
-
-            let v = u64::from_str_radix(&l, 2).unwrap();
-            println!("gate: {} {:?}", v, gate);
-
         }
         done = cnt == 0;
     }
@@ -111,7 +91,7 @@ pub fn part_one(input: &str) -> Option<u64> {
 //    values.sort();
    // println!("{:?}",values);
     let l: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
-
+   
 
     let mut l = l
         .iter()
@@ -119,7 +99,7 @@ pub fn part_one(input: &str) -> Option<u64> {
         .collect::<Vec<_>>();
     let l = l.iter().rev().cloned().collect::<Vec<_>>();
     let l = l.join("");
-
+    
 
     Some(u64::from_str_radix(&l, 2).unwrap())
 }
@@ -149,63 +129,16 @@ fn calculate_gate(gate: &mut Gate, wires: &mut BTreeMap<String, Wire>) -> bool {
         Operator::Xor => i1 ^ i2,
         Operator::Or => i1 | i2,
     };
-
+    
     wires.insert(name.to_string(), Wire::new(name.to_string(), Some(v)));
     true
 }
 
-pub fn part_two(input: &str) -> Option<u64> {
-    let mut wires: BTreeMap<String, Wire> = BTreeMap::new();
-    let mut formulas = HashMap::new();
-    let mut formulas_strings = Vec::new();
-
-    for line in input.lines() {
-        if line.is_empty() {
-            continue;
-        }
-        if line.contains(':') {
-            let parts = line.split(": ").collect::<Vec<_>>();
-            wires.insert(
-                parts[0].parse().unwrap(),
-                Wire::new(parts[0].to_string(), wire_value(parts[1])),
-            );
-            continue;
-        };
-        formulas_strings.push(line.to_string());
-        let parts = line.split(" ").collect::<Vec<_>>();
-        wires
-            .entry(parts[0].parse().unwrap())
-            .or_insert_with(|| Wire::new(parts[0].to_string(), None));
-        wires
-            .entry(parts[2].parse().unwrap())
-            .or_insert_with(|| Wire::new(parts[2].to_string(), None));
-        wires
-            .entry(parts[4].parse().unwrap())
-            .or_insert_with(|| Wire::new(parts[4].to_string(), None));
-
-        let op = match parts[1] {
-            "AND" => Operator::And,
-            "OR" => Operator::Or,
-            "XOR" => Operator::Xor,
-            _ => unreachable!(),
-        };
-        let gate = Gate::new(
-            (parts[0].to_string(), parts[2].to_string()),
-            parts[4].to_string(),
-            op,
-        );
-        formulas.insert(parts[4].to_string(), gate);
-    }
-    pp("z00", formulas,0);
-
-    None
-}
-/*
-pub fn part_two_0(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u32> {
     let mut wires: BTreeMap<String, Wire> = BTreeMap::new();
     let mut gates = Vec::new();
     let mut outputs = Vec::new();
-    let mut formulas = Vec::new();
+    let mut gate_strings = Vec::new();
     for line in input.lines() {
         if line.is_empty() {
             continue;
@@ -218,7 +151,7 @@ pub fn part_two_0(input: &str) -> Option<u32> {
             );
             continue;
         };
-        formulas.push(line.to_string());
+        gate_strings.push(line.to_string());
         let parts = line.split(" ").collect::<Vec<_>>();
         wires
             .entry(parts[0].parse().unwrap())
@@ -264,7 +197,7 @@ pub fn part_two_0(input: &str) -> Option<u32> {
     let l = l.iter().rev().cloned().collect::<Vec<_>>();
     let x_bin_string = l.join("");
     let x = u64::from_str_radix(&x_bin_string, 2).unwrap();
-
+    
     let y_list: Vec<_> = wires.values().filter(|w| w.name.starts_with("y")).collect();
     let l = y_list
         .iter()
@@ -284,20 +217,48 @@ pub fn part_two_0(input: &str) -> Option<u32> {
     let z = u64::from_str_radix(&z_bin_string, 2).unwrap();
 
     println!("x={} y={} x+y={} z={} {}",x,y, y + x, z, z_bin_string);
+    // create pairs and groups of 4 pairs
+    // run these modifications through the calculations to see if one of the pairs gives the correct number
+    let gate_pairs = create_unique_pairs(&gate_strings);
+    // create groups of 4 pairs
+    let swaps = create_unique_quads(&gate_pairs);
+    swaps.iter().for_each(|g| {
+        println!("{:?}",g );
+    });
     None
 }
-
- */
 // 55544677167336
 //55544677167336
 
-fn pp(wire: &str, gates: HashMap<String, Gate>, depth: usize) -> String {
-    if "xy".contains(wire) {
-        return "  ".repeat(depth) + wire
-    };
-    let gate = gates.get(wire).unwrap();
-    "  ".repeat(depth) + &*gate.output + " (" + wire + ")\n" + &*pp(&gate.inputs.0, gates.clone(), depth + 1) + "\n" + &*pp(&gate.inputs.1, gates.clone(), depth + 1)
+fn create_unique_pairs<T: Clone + PartialEq + Ord>(vec: &[T]) -> Vec<(T, T)> {
+    let mut result = Vec::new();
+
+    for i in 0..vec.len() {
+        for j in (i+1)..vec.len() {
+            // This ensures we only include each pair once
+            // and also skips pairs with the same element (when vec has duplicates)
+            if vec[i] != vec[j] {
+                result.push((vec[i].clone(), vec[j].clone()));
+            }
+        }
+    }
+
+    result
 }
+fn create_unique_quads<T: Clone + PartialEq + Ord>(vec: &[T]) -> Vec<(T, T, T, T)> {
+    let mut swaps = Vec::new();
+    for i in 0..vec.len() {
+        for j in (i+1)..vec.len() {
+            for k in (j+1)..vec.len() {
+                for l in (k+1)..vec.len() {
+                    swaps.push((vec[i].clone(), vec[j].clone(), vec[k].clone(),   vec[l].clone()));
+                }
+            }
+        }
+    }
+    swaps
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
