@@ -200,13 +200,25 @@ pub fn part_two(input: &str) -> Option<u64> {
         );
         formulas.insert(parts[4].to_string(), gate);
     }
+    for i in 0..=45 {
+        if !verify(i,&formulas) {
+            let wire = "z".to_owned() + &i.to_string();
+            println!("failed on: {}", wire);
+            break;
+        }
+    }
+    
+//    println!("{}",verify(0, &formulas));
+    /*
     let keys = formulas.keys().collect::<Vec<_>>();
     for k in keys {
         if k.chars().nth(0).unwrap() == 'z' {
             let p = pp(k, &formulas, 0);
-            println!("{}",p);
+            println!("{}", p);
         }
     }
+    
+     */
     //    let p = pp("z02", &formulas, 0);
     //    println!("part two: {}", p);
 
@@ -302,6 +314,94 @@ pub fn part_two_0(input: &str) -> Option<u32> {
  */
 // 55544677167336
 //55544677167336
+fn verify_z(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
+    println!("vx {} {}", wire, num);
+    let mut gate = gates.get(wire).unwrap();
+    let x = gate.inputs.0.clone();
+    let y = gate.inputs.1.clone();
+
+    if gate.operator != Operator::Xor {
+        return false;
+    }
+    if num == 0 {
+        let mut inputs = vec![x, y];
+        inputs.sort();
+        return inputs == vec!["x00", "y00"];
+    }
+    verify_intermediate_xor(&x, gates, num) && verify_carry_bit(&y, gates, num)
+        || verify_intermediate_xor(&y, gates, num) && verify_carry_bit(&y, gates, num)
+}
+
+fn verify_carry_bit(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
+    println!("vc {} {}", wire, num);
+    let gate = gates.get(wire).unwrap();
+    let x = gate.inputs.0.clone();
+    let y = gate.inputs.1.clone();
+    let wire_x = "x".to_owned() + &num.to_string();
+    let wire_y = "y".to_owned() + &num.to_string();
+
+    if num == 1 {
+        if gate.operator != Operator::And {
+            return false;
+        }
+        let mut inputs = vec![x, y];
+        inputs.sort();
+
+        return inputs == vec!["x00", "y00"];
+    }
+    if gate.operator != Operator::Or {
+        return false;
+    }
+    verify_direct_carry(&x, gates, num - 1) && verify_recarry(&y, gates, num - 1)
+        || verify_direct_carry(&y, gates, num - 1) && verify_recarry(&x, gates, num - 1)
+}
+
+fn verify_recarry(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
+    println!("vr {} {}", wire, num);
+    let gate = gates.get(wire).unwrap();
+    let x = gate.inputs.0.clone();
+    let y = gate.inputs.1.clone();
+    if gate.operator != Operator::And {
+        return false;
+    }
+    verify_intermediate_xor(&x, gates, num) && verify_carry_bit(&y, gates, num)
+        || verify_intermediate_xor(&y, gates, num) && verify_carry_bit(&x, gates, num)
+}
+
+fn verify_direct_carry(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
+    println!("vd {} {}", wire, num);
+    let gate = gates.get(wire).unwrap();
+    let x = gate.inputs.0.clone();
+    let y = gate.inputs.1.clone();
+    let wire_x = "x".to_owned() + format!("{:0width$}", num, width = 2).as_str();
+    let wire_y = "y".to_owned() + format!("{:0width$}", num, width = 2).as_str();
+    let mut inputs = vec![x, y];
+    inputs.sort();
+
+    if gate.operator != Operator::And {
+        return false;
+    }
+    inputs == vec![wire_x, wire_y]
+}
+fn verify(num: usize, gates: &HashMap<String, Gate>) -> bool {
+    let wire = "z".to_owned() + format!("{:0width$}", num, width = 2).as_str();
+
+    verify_z(&wire, gates, num)
+}
+fn verify_intermediate_xor(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
+    println!("vx {} {}", wire, num);
+    let gate = gates.get(wire).unwrap();
+    if gate.operator != Operator::Xor {
+        return false;
+    }
+    let x = gate.inputs.0.clone();
+    let y = gate.inputs.1.clone();
+    let wire_x = "x".to_owned() + format!("{:0width$}", num, width = 2).as_str();
+    let wire_y = "y".to_owned() + format!("{:0width$}", num, width = 2).as_str();
+    let mut inputs = vec![x, y];
+    inputs.sort();
+    inputs == vec![wire_x, wire_y]
+}
 
 fn pp(wire: &str, gates: &HashMap<String, Gate>, depth: usize) -> String {
     if "xy".contains(wire.chars().nth(0).unwrap()) {
