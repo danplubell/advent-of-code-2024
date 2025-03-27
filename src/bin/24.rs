@@ -18,6 +18,15 @@ enum Operator {
     Xor,
     Or,
 }
+impl Operator {
+    fn to_string(&self) -> &'static str {
+        match self {
+            Operator::And => "And",
+            Operator::Xor => "Xor",
+            Operator::Or => "Or",
+        }
+    }
+}
 fn wire_value(wire: &str) -> Option<i32> {
     Option::from(wire.to_string().parse::<i32>().unwrap())
 }
@@ -85,7 +94,6 @@ pub fn part_one(input: &str) -> Option<u64> {
             }
             let l: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
 
-
             let mut l = l
                 .iter()
                 .map(|w| {
@@ -94,24 +102,21 @@ pub fn part_one(input: &str) -> Option<u64> {
                     } else {
                         "0".to_string()
                     }
-                    })
+                })
                 .collect::<Vec<_>>();
             let l = l.iter().rev().cloned().collect::<Vec<_>>();
             let l = l.join("");
 
-
             let v = u64::from_str_radix(&l, 2).unwrap();
             println!("gate: {} {:?}", v, gate);
-
         }
         done = cnt == 0;
     }
-//    wires.iter().for_each(|w| println!("{:?} {:?}", w.1.name, w.1.value));
-//    let mut values = wires.values().map(|w|format!("{:?}: {:?}",w.name, w.value)).collect::<Vec<_>>();
-//    values.sort();
-   // println!("{:?}",values);
+    //    wires.iter().for_each(|w| println!("{:?} {:?}", w.1.name, w.1.value));
+    //    let mut values = wires.values().map(|w|format!("{:?}: {:?}",w.name, w.value)).collect::<Vec<_>>();
+    //    values.sort();
+    // println!("{:?}",values);
     let l: Vec<_> = wires.values().filter(|w| w.name.starts_with("z")).collect();
-
 
     let mut l = l
         .iter()
@@ -120,20 +125,19 @@ pub fn part_one(input: &str) -> Option<u64> {
     let l = l.iter().rev().cloned().collect::<Vec<_>>();
     let l = l.join("");
 
-
     Some(u64::from_str_radix(&l, 2).unwrap())
 }
 
 fn calculate_gate(gate: &mut Gate, wires: &mut BTreeMap<String, Wire>) -> bool {
     let out = wires.get(&gate.output);
     let name = out.unwrap().name.as_str();
-//    let out_v = match out {
-//        Some(wire) => wire.value,
-//        None => None,
-//    };
-//    if out_v.is_some() {
-//        return true;
-//    };
+    //    let out_v = match out {
+    //        Some(wire) => wire.value,
+    //        None => None,
+    //    };
+    //    if out_v.is_some() {
+    //        return true;
+    //    };
     let in1 = wires.get(gate.inputs.0.as_str()).and_then(|w| w.value);
     if in1.is_none() {
         return false;
@@ -196,7 +200,15 @@ pub fn part_two(input: &str) -> Option<u64> {
         );
         formulas.insert(parts[4].to_string(), gate);
     }
-    pp("z00", formulas,0);
+    let keys = formulas.keys().collect::<Vec<_>>();
+    for k in keys {
+        if k.chars().nth(0).unwrap() == 'z' {
+            let p = pp(k, &formulas, 0);
+            println!("{}",p);
+        }
+    }
+    //    let p = pp("z02", &formulas, 0);
+    //    println!("part two: {}", p);
 
     None
 }
@@ -291,12 +303,19 @@ pub fn part_two_0(input: &str) -> Option<u32> {
 // 55544677167336
 //55544677167336
 
-fn pp(wire: &str, gates: HashMap<String, Gate>, depth: usize) -> String {
-    if "xy".contains(wire) {
-        return "  ".repeat(depth) + wire
+fn pp(wire: &str, gates: &HashMap<String, Gate>, depth: usize) -> String {
+    if "xy".contains(wire.chars().nth(0).unwrap()) {
+        return "  ".repeat(depth) + wire;
     };
     let gate = gates.get(wire).unwrap();
-    "  ".repeat(depth) + &*gate.output + " (" + wire + ")\n" + &*pp(&gate.inputs.0, gates.clone(), depth + 1) + "\n" + &*pp(&gate.inputs.1, gates.clone(), depth + 1)
+    "  ".repeat(depth)
+        + &*gate.operator.to_string()
+        + " ("
+        + wire
+        + ")\n"
+        + &*pp(&gate.inputs.0, gates, depth + 1)
+        + "\n"
+        + &*pp(&gate.inputs.1, gates, depth + 1)
 }
 #[cfg(test)]
 mod tests {
