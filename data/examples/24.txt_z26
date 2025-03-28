@@ -134,7 +134,7 @@ y02 AND x02 -> fph
 jkb AND ttv -> bvs
 x21 AND y21 -> mtd
 x00 XOR y00 -> z00
-x26 AND y26 -> gsd
+x26 AND y26 -> z26
 y36 AND x36 -> qnf
 fhh OR hkv -> ttv
 hgk OR gfv -> crt
@@ -170,7 +170,7 @@ hnm OR vqk -> whc
 wfg XOR qbp -> z24
 y40 AND x40 -> fhh
 mtp XOR kth -> z13
-dfp XOR mbg -> z26
+dfp XOR mbg -> gsd
 y08 AND x08 -> gth
 nhb XOR cdq -> z12
 mjb OR knt -> tnr
