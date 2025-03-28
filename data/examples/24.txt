@@ -139,7 +139,7 @@ y36 AND x36 -> qnf
 fhh OR hkv -> ttv
 hgk OR gfv -> crt
 rjb XOR jrg -> z06
-psw OR nng -> z12
+psw OR nng -> kth
 nhq OR bjf -> vtg
 y28 XOR x28 -> pgc
 vth OR jvv -> rjb
@@ -172,7 +172,7 @@ y40 AND x40 -> fhh
 mtp XOR kth -> z13
 dfp XOR mbg -> gsd
 y08 AND x08 -> gth
-nhb XOR cdq -> kth
+nhb XOR cdq -> z12
 mjb OR knt -> tnr
 y08 XOR x08 -> ndh
 crt XOR vhk -> z20
