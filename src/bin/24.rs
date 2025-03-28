@@ -329,7 +329,7 @@ fn verify_z(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
         return inputs == vec!["x00", "y00"];
     }
     verify_intermediate_xor(&x, gates, num) && verify_carry_bit(&y, gates, num)
-        || verify_intermediate_xor(&y, gates, num) && verify_carry_bit(&y, gates, num)
+        || verify_intermediate_xor(&y, gates, num) && verify_carry_bit(&x, gates, num)
 }
 
 fn verify_carry_bit(wire: &str, gates: &HashMap<String, Gate>, num: usize) -> bool {
