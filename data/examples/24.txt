@@ -14,7 +14,6 @@ x12: 0
 x13: 0
 x14: 1
 x15: 0
-x16: 0
 x17: 0
 x18: 0
 x19: 0
@@ -112,7 +111,7 @@ x09 XOR y09 -> hsq
 gvs AND tmj -> psk
 y27 XOR x27 -> swt
 ssd OR hjf -> gvs
-y36 XOR x36 -> vpm
+y36 XOR x36 -> qnf
 y34 AND x34 -> vkh
 rpb AND nwm -> kmb
 tbc OR nvm -> ghk
@@ -135,7 +134,7 @@ jkb AND ttv -> bvs
 x21 AND y21 -> mtd
 x00 XOR y00 -> z00
 x26 AND y26 -> gsd
-y36 AND x36 -> qnf
+y36 AND x36 -> vpm
 fhh OR hkv -> ttv
 hgk OR gfv -> crt
 rjb XOR jrg -> z06
